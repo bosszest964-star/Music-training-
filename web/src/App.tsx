@@ -11,10 +11,13 @@ import { getReading, instruments, noteLabel } from './audio/pitch'
 import type { Instrument } from './audio/pitch'
 import { useTuner } from './audio/useTuner'
 import { dayKey, usePractice } from './usePractice'
+import EarStats from './ear/EarStats'
+import EarTraining from './ear/EarTraining'
+import { useEarStats } from './ear/stats'
 
 const sections = [
   { id: 'tools', icon: LayoutGrid, name: 'เครื่องมือพื้นฐาน', description: '' },
-  { id: 'ear', icon: Ear, name: 'ฝึกหู', description: 'แบบฝึกแยกช่วงเสียง คอร์ด และจังหวะจะอยู่ในหมวดนี้' },
+  { id: 'ear', icon: Ear, name: 'ฝึกหู', description: '' },
   { id: 'voice', icon: Mic, name: 'ฝึกร้องเพลง', description: 'ฝึกร้องตามโน้ตและดูระดับเสียงของคุณแบบเรียลไทม์' },
   { id: 'midi', icon: Piano, name: 'ฝึกเครื่องดนตรีและแกะเพลง', description: 'เชื่อมต่อเครื่องดนตรี MIDI และใช้เครื่องมือฝึกแกะเพลงจากไฟล์เสียง' },
   { id: 'gpu', icon: Cpu, name: 'เชื่อมต่อ Local GPU', description: 'เชื่อมต่อ GPU ในเครื่องเพื่อแยกเสียงร้องและเครื่องดนตรี' },
@@ -226,14 +229,17 @@ export default function App() {
   const metronome = useMetronome()
   const tuner = useTuner()
   const practice = usePractice(metronome.running || tuner.state === 'listening')
+  const earStats = useEarStats()
   const active = sections.find(section => section.id === activeId) ?? sections[0]
 
   function navigate(id: Section) {
+    if (id === activeId) return
     if (id !== 'tools' && activeId === 'tools') {
       metronome.stop()
       tuner.stop()
     }
     setActiveId(id)
+    window.scrollTo(0, 0)
   }
 
   return (
@@ -285,8 +291,10 @@ export default function App() {
             <Tuner tuner={tuner} />
           </div>
           <Practice practice={practice} />
+          <EarStats stats={earStats} open={() => navigate('ear')} />
         </div>
-        {activeId !== 'tools' && (
+        {activeId === 'ear' && <EarTraining stats={earStats} />}
+        {activeId !== 'tools' && activeId !== 'ear' && (
           <section className="panel placeholder">
             <span className="tool-icon purple"><active.icon size={24} /></span>
             <h1>{active.name}</h1>
