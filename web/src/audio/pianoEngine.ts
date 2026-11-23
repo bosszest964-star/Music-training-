@@ -150,12 +150,14 @@ interface PianoNote {
   velocity?: number
   duration?: number
   sampled?: boolean
+  detuneCents?: number
 }
 
 export function playPiano(context: BaseAudioContext, output: AudioNode, note: PianoNote) {
   const { midi, time, level, duration, sampled = true } = note
   const velocity = Math.max(0.02, Math.min(1, note.velocity ?? 0.76))
   const anchor = pianoAnchor(midi)
+  const pitch = midi + (note.detuneCents ?? 0) / 100
   const weight = (0.16 + 0.84 * velocity ** 1.5) / (0.16 + 0.84 * 0.76 ** 1.5)
   const sample = sampled && supported(midi) ? bank.get(anchor) : undefined
   if (supported(midi)) preloadPianoAnchors([anchor])
@@ -172,7 +174,7 @@ export function playPiano(context: BaseAudioContext, output: AudioNode, note: Pi
     bank.set(anchor, sample)
     const source = context.createBufferSource()
     source.buffer = sample.buffer
-    source.playbackRate.value = 2 ** ((midi - anchor) / 12)
+    source.playbackRate.value = 2 ** ((pitch - anchor) / 12)
     const tone = context.createBiquadFilter()
     tone.type = 'lowpass'
     tone.frequency.value = Math.min(context.sampleRate * 0.48, 1500 + 15_000 * velocity ** 1.2)
@@ -187,7 +189,7 @@ export function playPiano(context: BaseAudioContext, output: AudioNode, note: Pi
     source.start(time)
     stopAt = when => source.stop(when)
   } else {
-    stopAt = playNote(context, envelope, midi, time, duration ?? 6, 'piano', level * weight, () => envelope.disconnect())
+    stopAt = playNote(context, envelope, pitch, time, duration ?? 6, 'piano', level * weight, () => envelope.disconnect())
   }
 
   envelope.gain.setValueAtTime(0.0001, time)

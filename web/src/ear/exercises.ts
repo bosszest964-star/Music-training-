@@ -1,8 +1,11 @@
+import { advancedCategories } from './exerciseMetadata'
+
 export const topics = {
   degree: 'หน้าที่โน้ตในคีย์',
   interval: 'ขั้นคู่เสียง',
   chord: 'ชนิดคอร์ด',
   eq: 'ย่านความถี่ EQ',
+  ...advancedCategories,
 } as const
 
 export type Topic = keyof typeof topics
@@ -21,6 +24,7 @@ interface Cue {
   notes: readonly number[]
   at: number
   duration: number
+  cents?: number
 }
 
 export type Sound = { cues: Cue[] }

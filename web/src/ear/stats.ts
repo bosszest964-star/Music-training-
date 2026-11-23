@@ -2,6 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { dayKey } from '../usePractice'
 import { topics } from './exercises'
 import type { Topic } from './exercises'
+import { advancedCategories, gradeStars } from './exerciseMetadata'
+import type { AdvancedCategory, ExerciseMetadata } from './exerciseMetadata'
+import { exerciseById } from './advanced/catalog'
 
 const storagePrefix = 'music-training.ear.v1:'
 const topicIds = Object.keys(topics) as Topic[]
@@ -12,15 +15,12 @@ interface Count {
 }
 
 type Counts = Record<Topic, Count>
-type History = Record<string, Counts>
+type Stars = Record<string, number>
+type Bucket = Counts & { bestStars: Stars }
+type History = Record<string, Bucket>
 
 function emptyCounts(): Counts {
-  return {
-    degree: { correct: 0, attempts: 0 },
-    interval: { correct: 0, attempts: 0 },
-    chord: { correct: 0, attempts: 0 },
-    eq: { correct: 0, attempts: 0 },
-  }
+  return Object.fromEntries(topicIds.map(topic => [topic, { correct: 0, attempts: 0 }])) as Counts
 }
 
 function parseCounts(raw: string | null) {
@@ -35,7 +35,16 @@ function parseCounts(raw: string | null) {
         counts[topic] = { correct, attempts }
       }
     }
-    return counts
+    const bestStars: Stars = {}
+    if (data.bestStars && typeof data.bestStars === 'object') {
+      for (const [id, stars] of Object.entries(data.bestStars)) {
+        const exercise = exerciseById.get(id)
+        if (exercise && typeof stars === 'number' && Number.isSafeInteger(stars) && stars > 0 && stars <= exercise.maxStars) {
+          bestStars[id] = stars
+        }
+      }
+    }
+    return { ...counts, bestStars }
   } catch {
     return null
   }
@@ -56,7 +65,9 @@ function summarize(records: History) {
   const counts = emptyCounts()
   const total: Count = { correct: 0, attempts: 0 }
   const days = new Set<string>()
+  const bestStars: Stars = {}
   for (const [key, entry] of Object.entries(records)) {
+    for (const [id, stars] of Object.entries(entry.bestStars)) bestStars[id] = Math.max(bestStars[id] ?? 0, stars)
     for (const topic of topicIds) {
       const { correct, attempts } = entry[topic]
       counts[topic].correct += correct
@@ -66,7 +77,13 @@ function summarize(records: History) {
       if (attempts) days.add(key.slice(storagePrefix.length, storagePrefix.length + 10))
     }
   }
-  return { counts, total, days }
+  const starsByCategory = Object.fromEntries(Object.keys(advancedCategories).map(id => [id, 0])) as Record<AdvancedCategory, number>
+  for (const [id, stars] of Object.entries(bestStars)) {
+    const exercise = exerciseById.get(id)
+    if (exercise) starsByCategory[exercise.categoryId] += stars
+  }
+  const totalStars = Object.values(starsByCategory).reduce((sum, stars) => sum + stars, 0)
+  return { counts, total, days, bestStars, starsByCategory, totalStars }
 }
 
 function isHistoryKey(key: string) {
@@ -119,14 +136,16 @@ export function useEarStats() {
     return () => window.removeEventListener('storage', sync)
   }, [])
 
-  function record(topic: Topic, correct: boolean) {
+  function add(topic: Topic, correct: number, attempts: number, exercise?: ExerciseMetadata) {
     const key = `${storagePrefix}${dayKey(new Date())}:${writerId}`
-    const bucket = recordsRef.current[key] ?? emptyCounts()
+    const bucket = recordsRef.current[key] ?? { ...emptyCounts(), bestStars: {} }
     const count = bucket[topic]
-    const next = {
-      ...bucket,
-      [topic]: { correct: count.correct + Number(correct), attempts: count.attempts + 1 },
+    const bestStars: Stars = { ...bucket.bestStars }
+    if (exercise) {
+      const stars = gradeStars(correct, attempts, exercise.maxStars)
+      if (stars > (bestStars[exercise.id] ?? 0)) bestStars[exercise.id] = stars
     }
+    const next = { ...bucket, bestStars, [topic]: { correct: count.correct + correct, attempts: count.attempts + attempts } }
     recordsRef.current = { ...recordsRef.current, [key]: next }
     setRecords(recordsRef.current)
     try {
@@ -137,7 +156,15 @@ export function useEarStats() {
     }
   }
 
-  return { ...summary, record, storageError }
+  function record(topic: Topic, correct: boolean) {
+    add(topic, Number(correct), 1)
+  }
+
+  function recordExercise(exercise: ExerciseMetadata, correct: number, attempts: number) {
+    add(exercise.categoryId, correct, attempts, exercise)
+  }
+
+  return { ...summary, record, recordExercise, storageError }
 }
 
 export type EarStatsData = ReturnType<typeof useEarStats>
