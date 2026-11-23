@@ -1,6 +1,9 @@
+export type PianoHand = 'left' | 'right'
+
 export interface PianoNote {
   midi: number
   duration: number
+  hand?: PianoHand
 }
 
 export interface PianoCue {
@@ -27,7 +30,7 @@ export function buildSong(title: string, credit: string, notes: (PianoNote & { t
   let length = 0
   let total = 0
   for (const note of notes.sort((a, b) => a.time - b.time)) {
-    const { time, midi, duration } = note
+    const { time, midi, duration, hand } = note
     if (!Number.isInteger(midi) || midi < 0 || midi > 127 || !Number.isFinite(time) || time < 0
       || !Number.isFinite(duration) || duration < 0) throw new Error('ไฟล์มีเวลาโน้ตที่อ่านไม่ได้')
     let cue = cues.at(-1)
@@ -39,7 +42,7 @@ export function buildSong(title: string, credit: string, notes: (PianoNote & { t
     const previous = cue.notes.find(entry => entry.midi === midi)
     if (previous) previous.duration = Math.max(previous.duration, durationAtCue)
     else {
-      cue.notes.push({ midi, duration: durationAtCue })
+      cue.notes.push(hand ? { midi, duration: durationAtCue, hand } : { midi, duration: durationAtCue })
       total += 1
     }
     low = Math.min(low, midi)
@@ -55,43 +58,17 @@ export function buildSong(title: string, credit: string, notes: (PianoNote & { t
   return { title, credit, cues, total, low, high, length: length - start }
 }
 
-type Beat = [notes: number | number[], beats?: number]
-
-function lesson(title: string, credit: string, bpm: number, beats: Beat[]) {
-  const seconds = 60 / bpm
-  let time = 0
-  const notes = beats.flatMap(([pitches, length = 1]) => {
-    const onset = time
-    time += length * seconds
-    return [pitches].flat().map(midi => ({ midi, time: onset, duration: length * seconds * 0.88 }))
+export function songForHand(song: PianoSong, hand: PianoHand | 'both'): PianoSong {
+  if (hand === 'both' || !song.cues.some(cue => cue.notes.some(note => note.hand))) return song
+  const cues = song.cues.flatMap(cue => {
+    const notes = cue.notes.filter(note => note.hand === hand)
+    return notes.length ? [{ time: cue.time, notes }] : []
   })
-  return buildSong(title, credit, notes)
+  const pitches = cues.flatMap(cue => cue.notes.map(note => note.midi))
+  if (!pitches.length) return song
+  const length = Math.max(...cues.flatMap(cue => cue.notes.map(note => cue.time + note.duration)))
+  return { ...song, cues, low: Math.min(...pitches), high: Math.max(...pitches), total: pitches.length, length }
 }
-
-export const songs = [
-  lesson('Ode to Joy', 'Ludwig van Beethoven · ทำนองช่วงต้น', 96, [
-    [64], [64], [65], [67], [67], [65], [64], [62], [60], [60], [62], [64], [64, 1.5], [62, .5], [62, 2],
-    [64], [64], [65], [67], [67], [65], [64], [62], [60], [60], [62], [64], [62, 1.5], [60, .5], [60, 2],
-  ]),
-  lesson('Twinkle Twinkle', 'ทำนองดั้งเดิม · เรียบเรียงสำหรับฝึก', 100, [
-    [60], [60], [67], [67], [69], [69], [67, 2], [65], [65], [64], [64], [62], [62], [60, 2],
-    [67], [67], [65], [65], [64], [64], [62, 2], [67], [67], [65], [65], [64], [64], [62, 2],
-    [60], [60], [67], [67], [69], [69], [67, 2], [65], [65], [64], [64], [62], [62], [60, 2],
-  ]),
-  lesson('Minuet in G', 'Christian Petzold · ทำนองช่วงต้น', 112, [
-    [74], [67, .5], [69, .5], [71, .5], [72, .5], [74], [67], [67],
-    [76], [72, .5], [74, .5], [76, .5], [78, .5], [79], [67], [67],
-    [72], [74, .5], [72, .5], [71, .5], [69, .5], [71], [72, .5], [71, .5], [69, .5], [67, .5],
-    [66], [67, .5], [69, .5], [71, .5], [67, .5], [69, 3],
-  ]),
-  lesson('ไล่สเกล C เมเจอร์', 'แบบฝึกหัดขึ้นและลงหนึ่งอ็อกเทฟ', 88, [
-    [60], [62], [64], [65], [67], [69], [71], [72, 2], [71], [69], [67], [65], [64], [62], [60, 2],
-  ]),
-  lesson('ทางคอร์ดป๊อป I–V–vi–IV', 'แบบฝึกจับคอร์ด C · G · Am · F', 84, [
-    [[60, 64, 67], 4], [[59, 62, 67], 4], [[60, 64, 69], 4], [[60, 65, 69], 4],
-    [[60, 64, 67], 4], [[59, 62, 67], 4], [[60, 64, 69], 4], [[60, 65, 69], 4],
-  ]),
-]
 
 export async function readMidi(file: File) {
   if (file.size > 8 * 1024 * 1024) throw new Error('รองรับไฟล์ MIDI ขนาดไม่เกิน 8 MB')

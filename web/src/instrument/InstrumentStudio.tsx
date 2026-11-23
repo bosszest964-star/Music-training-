@@ -1,18 +1,27 @@
-import { useId, useState } from 'react'
-import { AudioLines, Guitar, KeyboardMusic, Timer, Trophy } from 'lucide-react'
+import { lazy, Suspense, useId, useRef, useState } from 'react'
+import { AudioLines, Guitar, KeyboardMusic, ListMusic, Music2, Star, Timer, Trophy } from 'lucide-react'
 import { formatDuration } from '../usePractice'
 import AudioPlayer from './AudioPlayer'
 import ChordTrainer from './ChordTrainer'
 import PianoTrainer from './PianoTrainer'
 import type { InstrumentStats } from './stats'
+import { activityLabels, roundStars } from './stats'
+import { MasteryStars } from './mastery/MasteryControls'
+const FretboardTrainer = lazy(() => import('./mastery/FretboardTrainer'))
+const SightReadingTrainer = lazy(() => import('./mastery/SightReadingTrainer'))
+const StrumTrainer = lazy(() => import('./mastery/StrumTrainer'))
 
 const tabs = {
   piano: { name: 'เปียโนและโน้ตไหล', icon: KeyboardMusic },
   chords: { name: 'คลังคอร์ด', icon: Guitar },
+  strum: { name: 'ตีคอร์ดตามจังหวะ', icon: ListMusic },
+  fretboard: { name: 'จำโน้ตบนคอ', icon: Guitar },
+  reading: { name: 'อ่านโน้ต', icon: Music2 },
   audio: { name: 'แกะเพลง', icon: AudioLines },
 } as const
 
 type Tab = keyof typeof tabs
+const tabIds = Object.keys(tabs) as Tab[]
 const dates = new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium', timeStyle: 'short' })
 
 export function InstrumentHistory({ stats, open }: { stats: InstrumentStats; open?: () => void }) {
@@ -20,7 +29,7 @@ export function InstrumentHistory({ stats, open }: { stats: InstrumentStats; ope
   const [limit, setLimit] = useState(open ? 3 : 8)
   const latestPiano = stats.rounds.find(round => round.activity === 'piano')
   const latestChords = stats.rounds.find(round => round.activity === 'chords')
-  const total = stats.rounds.reduce((sum, round) => sum + round.duration, 0)
+  const latestQuiz = stats.rounds.find(round => round.activity === 'reading' || round.activity === 'fretboard')
   return (
     <section className="panel instrument-panel instrument-history" aria-labelledby={title}>
       <header className="panel-header">
@@ -31,18 +40,24 @@ export function InstrumentHistory({ stats, open }: { stats: InstrumentStats; ope
       <dl className="instrument-metrics">
         <div><dt><Trophy size={16} />เปียโนล่าสุด</dt><dd>{latestPiano ? `${latestPiano.accuracy}%` : '—'}</dd></div>
         <div><dt><Guitar size={16} />เปลี่ยนคอร์ดทันล่าสุด</dt><dd>{latestChords ? `${latestChords.accuracy}%` : '—'}</dd></div>
-        <div><dt><Timer size={16} />เวลารอบที่ซ้อมจบ</dt><dd>{formatDuration(total)}</dd></div>
+        <div><dt><Music2 size={16} />เกมโน้ตล่าสุด</dt><dd>{latestQuiz ? `${latestQuiz.accuracy}%` : '—'}</dd></div>
+        <div><dt><Star size={16} />ดาวสะสม</dt><dd>{stats.totals.stars}</dd></div>
+        <div><dt><Timer size={16} />เวลาซ้อมสะสม</dt><dd>{formatDuration(stats.totals.duration)}</dd></div>
       </dl>
       {stats.rounds.length ? (
         <>
           <ul className="instrument-history-list">
-            {stats.rounds.slice(0, limit).map(round => (
-              <li key={round.id}>
+            {stats.rounds.slice(0, limit).map(round => {
+              const earned = roundStars(round)
+              return <li key={round.id}>
                 <div><strong>{round.label}</strong><time dateTime={new Date(round.date).toISOString()}>{dates.format(round.date)}</time></div>
-                <span>{round.activity === 'piano' ? 'โน้ตไหล' : 'เปลี่ยนคอร์ด · ประเมินเอง'} · {formatDuration(round.duration)}</span>
-                <strong>{round.accuracy}%</strong>
+                <span>{activityLabels[round.activity]} · {formatDuration(round.duration)}</span>
+                {round.activity !== 'strum' && <div className="mastery-history-score">
+                  <strong>{round.accuracy}%</strong>
+                  {earned && <MasteryStars stars={earned.stars} max={earned.max} />}
+                </div>}
               </li>
-            ))}
+            })}
           </ul>
           {!open && limit < stats.rounds.length && <button className="subtle-button" onClick={() => setLimit(value => value + 8)}>ดูประวัติเพิ่ม</button>}
         </>
@@ -52,29 +67,56 @@ export function InstrumentHistory({ stats, open }: { stats: InstrumentStats; ope
   )
 }
 
+const trainers = { piano: PianoTrainer, chords: ChordTrainer, strum: StrumTrainer, fretboard: FretboardTrainer, reading: SightReadingTrainer }
+
+function InstrumentTrainer({ tab, ...props }: {
+  tab: Exclude<Tab, 'audio'>
+  save: InstrumentStats['save']
+  onActiveChange: (active: boolean) => void
+}) {
+  const Trainer = trainers[tab]
+  return <Trainer {...props} />
+}
+
 export default function InstrumentStudio({ stats, onActiveChange }: { stats: InstrumentStats; onActiveChange: (active: boolean) => void }) {
   const [tab, setTab] = useState<Tab>('piano')
+  const tabList = useRef<HTMLDivElement>(null)
+  const prefix = useId()
 
   return (
     <>
       <section className="hero instrument-hero">
         <div className="hero-copy">
           <h1>ห้องซ้อมเครื่องดนตรี</h1>
-          <span>เล่นตามโน้ต ฝึกเปลี่ยนคอร์ด และแกะเพลงทีละท่อน</span>
+          <span>เล่นเปียโน ฝึกตีคอร์ด อ่านโน้ต และแกะเพลงทีละท่อน</span>
         </div>
         <div className="instrument-hero-art" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></div>
       </section>
-      <div className="instrument-tabs" role="group" aria-label="เลือกเครื่องมือฝึกและแกะเพลง">
-        {(Object.keys(tabs) as Tab[]).map(id => {
+      <div ref={tabList} className="instrument-tabs" role="tablist" aria-label="เลือกเครื่องมือฝึกและแกะเพลง"
+        onKeyDown={event => {
+          const index = tabIds.indexOf(tab)
+          const next = event.key === 'ArrowRight' ? (index + 1) % tabIds.length
+            : event.key === 'ArrowLeft' ? (index + tabIds.length - 1) % tabIds.length
+              : event.key === 'Home' ? 0 : event.key === 'End' ? tabIds.length - 1 : -1
+          if (next < 0) return
+          event.preventDefault()
+          setTab(tabIds[next])
+          tabList.current?.querySelectorAll('button')[next].focus()
+        }}>
+        {tabIds.map(id => {
           const { name, icon: Icon } = tabs[id]
-          return <button key={id} className="subtle-button" aria-pressed={tab === id} onClick={() => setTab(id)}>
-            <Icon size={18} />{name}
-          </button>
+          return <button key={id} id={`${prefix}-${id}`} className="subtle-button" role="tab"
+            aria-selected={tab === id} aria-controls={`${prefix}-panel-${id}`}
+            tabIndex={tab === id ? 0 : -1} onClick={() => setTab(id)}><Icon size={18} />{name}</button>
         })}
       </div>
-      {tab === 'piano' && <PianoTrainer save={stats.save} onActiveChange={onActiveChange} />}
-      {tab === 'chords' && <ChordTrainer save={stats.save} onActiveChange={onActiveChange} />}
-      {tab === 'audio' && <AudioPlayer onActiveChange={onActiveChange} />}
+      {tabIds.map(id => <div key={id} id={`${prefix}-panel-${id}`} role="tabpanel" aria-labelledby={`${prefix}-${id}`}
+        hidden={tab !== id} tabIndex={tab === id ? 0 : undefined}>
+        {tab === id && <Suspense fallback={<div className="panel instrument-panel" role="status">กำลังเปิดแบบฝึก…</div>}>
+          {id === 'audio' ? <AudioPlayer onActiveChange={onActiveChange} />
+            : <InstrumentTrainer tab={id} save={stats.save} onActiveChange={onActiveChange} />}
+        </Suspense>}
+      </div>)}
       <InstrumentHistory stats={stats} />
     </>
   )

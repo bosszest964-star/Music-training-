@@ -1,7 +1,7 @@
 import { midiToHz } from './pitch'
 
 export type Voice = 'piano' | 'soft'
-export type SynthVoice = Voice | 'guitar' | 'ukulele'
+export type SynthVoice = Voice | 'guitar' | 'ukulele' | 'bass'
 
 const partials = {
   piano: [
@@ -18,6 +18,12 @@ const partials = {
     { ratio: 3, level: 0.25, tail: 0.48 },
     { ratio: 4, level: 0.13, tail: 0.27 },
     { ratio: 6, level: 0.08, tail: 0.19 },
+  ],
+  bass: [
+    { ratio: 1, level: 1, tail: 1 },
+    { ratio: 2, level: 0.37, tail: 0.68 },
+    { ratio: 3, level: 0.11, tail: 0.35 },
+    { ratio: 5, level: 0.04, tail: 0.15 },
   ],
   ukulele: [
     { ratio: 1, level: 1, tail: 0.79 },

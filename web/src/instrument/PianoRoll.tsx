@@ -66,11 +66,11 @@ export default function PianoRoll({ song, layout, game, moving }: {
           const left = key.center * unit - noteWidth / 2
           const matched = round?.hits.get(index)?.has(note.midi)
           const waiting = snapshot?.waiting && snapshot.cursor === index
-          context.fillStyle = matched ? '#508a72' : waiting ? '#eab777' : key.black ? '#7c60cb' : '#ae8beb'
+          context.fillStyle = matched ? '#508a72' : waiting ? '#eab777' : note.hand === 'left' ? '#75c9be' : key.black ? '#7c60cb' : '#ae8beb'
           context.fillRect(left, y - noteHeight, noteWidth, noteHeight)
           context.font = '600 12px system-ui'
           context.textAlign = 'center'
-          context.fillStyle = waiting || !key.black ? '#181225' : '#fff'
+          context.fillStyle = waiting || note.hand === 'left' || !key.black ? '#181225' : '#fff'
           if (noteWidth >= 18) context.fillText(noteLabel(note.midi), key.center * unit, y - 5, noteWidth)
         }
       }

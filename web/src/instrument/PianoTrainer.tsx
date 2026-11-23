@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, FileMusic, Mic, Pause, Play, Square, Usb } from 'lucide-react'
+import { FileMusic, Mic, Pause, Play, Square } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { noteLabel } from '../audio/pitch'
 import PianoLoadStatus from '../audio/PianoLoadStatus'
@@ -7,16 +7,24 @@ import { useMicrophonePitch } from '../audio/useMicrophonePitch'
 import { createPianoRound, pianoKeys } from './pianoGame'
 import type { PianoRound } from './pianoGame'
 import PianoRoll from './PianoRoll'
-import { readMidi, songs } from './songs'
-import type { PianoSong } from './songs'
+import { readMidi, songForHand } from './songs'
+import type { PianoHand, PianoSong } from './songs'
+import { difficultyNames, gradeStars } from '../exerciseMetadata'
+import PianoKeyboard from './PianoKeyboard'
+import { pianoById, pianoCurriculum, pianoGroups } from './mastery/curriculum'
+import { MasterySelect, MasteryStars, MidiControl } from './mastery/MasteryControls'
 import type { SaveRound } from './stats'
 import { useMidiInput } from './useMidiInput'
 import { useStudioSound } from './useStudioSound'
 
+const handLabels = { both: 'สองมือ', left: 'มือซ้าย', right: 'มือขวา' } as const
+
 const clock = () => performance.now() / 1000
 
 export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound; onActiveChange: (active: boolean) => void }) {
-  const [song, setSong] = useState(songs[0])
+  const [selection, setSelection] = useState(pianoCurriculum[0].id)
+  const [group, setGroup] = useState<keyof typeof pianoGroups>(pianoCurriculum[0].group)
+  const [hand, setHand] = useState<PianoHand | 'both'>('both')
   const [imported, setImported] = useState<PianoSong | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -34,6 +42,9 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
   const importId = useRef(0)
   const micSilentUntil = useRef(0)
   const scroller = useRef<HTMLDivElement>(null)
+  const lesson = pianoById.get(selection)
+  const fullSong = lesson ?? imported ?? pianoCurriculum[0]
+  const song = useMemo(() => songForHand(fullSong, hand), [fullSong, hand])
   const layout = useMemo(() => pianoKeys(song.low, song.high), [song])
   const sound = useStudioSound()
   const mic = useMicrophonePitch()
@@ -148,7 +159,10 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
         onActiveChange(false)
         setScore(round.accuracy())
         setState('complete')
-        save({ activity: 'piano', label: song.title, duration: elapsed.current + now - started.current, accuracy: round.accuracy() })
+        save({
+          activity: 'piano', label: lesson?.hands ? `${song.title} · ${handLabels[hand]}` : song.title,
+          exerciseId: lesson?.id, duration: elapsed.current + now - started.current, accuracy: round.accuracy(),
+        })
       } else {
         frame = requestAnimationFrame(tick)
       }
@@ -171,7 +185,7 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
       cancelAnimationFrame(frame)
       document.removeEventListener('visibilitychange', pauseOnHide)
     }
-  }, [playing, onActiveChange, save, song])
+  }, [playing, onActiveChange, save, song, lesson, hand])
 
   useEffect(() => () => {
     importId.current += 1
@@ -196,6 +210,7 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
   }, [followingCue, layout])
 
   function begin() {
+    void sound.ready()
     if (state !== 'paused') {
       game.current = createPianoRound(song, wait)
       elapsed.current = 0
@@ -236,7 +251,8 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
       const next = await readMidi(file)
       if (token !== importId.current) return
       setImported(next)
-      setSong(next)
+      setSelection('file')
+      setHand('both')
       if (scroller.current) scroller.current.scrollLeft = 0
     } catch (cause) {
       if (token === importId.current) {
@@ -248,7 +264,15 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
   }
 
   const inRound = playing || state === 'paused'
-  const selected = song === imported ? 'file' : String(songs.indexOf(song))
+  const lessons = pianoCurriculum.filter(entry => entry.group === group)
+
+  function select(id: string) {
+    reset()
+    setSelection(id)
+    setHand('both')
+    if (scroller.current) scroller.current.scrollLeft = 0
+    setError('')
+  }
 
   return (
     <section className="panel instrument-panel" aria-labelledby="piano-title">
@@ -256,20 +280,22 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
         <span className="tool-icon purple"><FileMusic size={22} /></span>
         <div><h2 id="piano-title">เปียโนและโน้ตไหล</h2><p>เล่นบนลิ่มนิ้ว ใช้ไมโครโฟน หรือเชื่อมต่อคีย์บอร์ด MIDI</p></div>
       </header>
+      <div className="instrument-toolbar mastery-groups" role="group" aria-label="หมวดคลังเปียโน">
+        {Object.entries(pianoGroups).map(([id, label]) => (
+          <button key={id} className="subtle-button" aria-pressed={group === id && !!lesson} disabled={inRound || loading}
+            onClick={() => {
+              const first = pianoCurriculum.find(entry => entry.group === id)
+              if (!first || (group === id && lesson)) return
+              setGroup(first.group)
+              select(first.id)
+            }}>{label}</button>
+        ))}
+      </div>
       <div className="instrument-toolbar">
-        <label className="instrument-field">เพลงหรือแบบฝึกหัด
-          <span className="instrument-select"><select value={selected} disabled={inRound || loading} onChange={event => {
-            const next = event.currentTarget.value === 'file' ? imported : songs[Number(event.currentTarget.value)]
-            if (!next) return
-            reset()
-            setSong(next)
-            if (scroller.current) scroller.current.scrollLeft = 0
-            setError('')
-          }}>
-            {songs.map((entry, index) => <option value={index} key={entry.title}>{entry.title}</option>)}
-            {imported && <option value="file">{imported.title}</option>}
-          </select><ChevronDown size={16} /></span>
-        </label>
+        <MasterySelect label="เพลงหรือแบบฝึกหัด" value={selection} disabled={inRound || loading} onChange={select}>
+          {lessons.map(entry => <option value={entry.id} key={entry.id}>{entry.title}</option>)}
+          {imported && <option value="file">{imported.title}</option>}
+        </MasterySelect>
         <label className="subtle-button instrument-file">
           <FileMusic size={17} />{loading ? 'กำลังอ่าน MIDI…' : 'นำเข้า MIDI'}
           <input type="file" accept=".mid,.midi,audio/midi,audio/x-midi" disabled={inRound || loading} onChange={event => {
@@ -281,7 +307,18 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
         <label className="instrument-toggle"><input type="checkbox" checked={wait} disabled={inRound}
           onChange={event => { reset(); setWait(event.currentTarget.checked) }} />โหมดรอโน้ต (Wait Mode)</label>
       </div>
-      <p className="instrument-hint">{song.credit} · {song.total} โน้ต</p>
+      {lesson?.hands && <div className="instrument-toolbar" role="group" aria-label="เลือกมือที่จะซ้อม">
+        {(Object.keys(handLabels) as (keyof typeof handLabels)[]).map(value => (
+          <button className="subtle-button" key={value} disabled={inRound} aria-pressed={hand === value} onClick={() => {
+            if (value === hand) return
+            reset()
+            setHand(value)
+            if (scroller.current) scroller.current.scrollLeft = 0
+          }}>{handLabels[value]}</button>
+        ))}
+      </div>}
+      <p className="instrument-hint">{song.credit} · {song.total} โน้ต{lesson && ` · ระดับ${difficultyNames[lesson.difficulty]} · ${lesson.bpm} BPM`}</p>
+      {lesson?.hands && hand === 'both' && <p className="instrument-hint mastery-hand-key"><i />มือซ้าย <i />มือขวา</p>}
       {error && <p className="field-error" role="alert">{error}</p>}
       <div className="instrument-toolbar instrument-inputs">
         <button className="subtle-button" onClick={micToggle}>
@@ -289,13 +326,7 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
             mic.state === 'requesting' ? 'ยกเลิกขอใช้ไมค์' : 'เปิดไมโครโฟน'}
         </button>
         {mic.state === 'activation' && <button className="subtle-button" onClick={mic.stop}>ยกเลิก</button>}
-        <button className="subtle-button" disabled={!midiInput.supported}
-          onClick={midiInput.state === 'idle' ? () => void midiInput.connect() : midiInput.disconnect}>
-          <Usb size={17} />{midiInput.state === 'requesting' ? 'ยกเลิกเชื่อมต่อ MIDI' :
-            midiInput.state === 'connected' ? 'ตัดการเชื่อมต่อ MIDI' : 'เชื่อมต่อ Web MIDI'}
-        </button>
-        {!midiInput.supported && <span className="instrument-hint">เบราว์เซอร์นี้ใช้ Web MIDI ไม่ได้ ใช้ลิ่มนิ้วหรือไมโครโฟนได้</span>}
-        {midiInput.state === 'connected' && <span className="instrument-hint">{midiInput.count ? `เชื่อมต่อ ${midiInput.count} อุปกรณ์` : 'รอเสียบอุปกรณ์ MIDI'}</span>}
+        <MidiControl midi={midiInput} />
       </div>
       {mic.state === 'listening' && <p className="instrument-hint">ไมค์รับทีละโน้ต สำหรับคอร์ดในโหมดรอให้เล่นแยกทีละเสียง</p>}
       {(mic.error || midiInput.error || sound.error) && <p className="field-error" role="alert">{mic.error || midiInput.error || sound.error}</p>}
@@ -303,28 +334,7 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
       <div className="instrument-piano" ref={scroller} tabIndex={0} aria-label="เปียโน เลื่อนซ้ายขวาเพื่อเปลี่ยนช่วงลิ่มนิ้ว">
         <div className="instrument-lanes" style={{ '--white-count': layout.whites } as CSSProperties}>
           <PianoRoll song={song} layout={layout} game={game} moving={playing} />
-          <div className="instrument-keys">
-            {layout.keys.map(key => (
-              <button key={key.midi} className={`instrument-key ${key.black ? 'black' : 'white'}`}
-                style={{ '--center': key.center } as CSSProperties}
-                aria-label={noteLabel(key.midi)} aria-pressed={held.has(key.midi)} data-held={held.has(key.midi) || undefined}
-                data-target={target.some(note => note.midi === key.midi) || undefined}
-                onPointerDown={event => {
-                  if (event.button !== 0) return
-                  event.currentTarget.setPointerCapture?.(event.pointerId)
-                  const velocity = event.pointerType === 'mouse' || !event.pressure ? 0.76 : 0.32 + 0.68 * event.pressure
-                  keyEvent(`pointer:${event.pointerId}`, key.midi, true, velocity)
-                }}
-                onLostPointerCapture={event => keyEvent(`pointer:${event.pointerId}`, key.midi, false)}
-                onPointerUp={event => keyEvent(`pointer:${event.pointerId}`, key.midi, false)}
-                onPointerCancel={event => keyEvent(`pointer:${event.pointerId}`, key.midi, false)}
-                onClick={event => {
-                  if (event.detail !== 0) return
-                  keyEvent('keyboard', key.midi, true)
-                  keyEvent('keyboard', key.midi, false)
-                }}>{noteLabel(key.midi)}</button>
-            ))}
-          </div>
+          <PianoKeyboard layout={layout} held={held} targets={target.map(note => note.midi)} onKey={keyEvent} />
         </div>
       </div>
       <div className="instrument-toolbar instrument-playbar">
@@ -339,7 +349,10 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
           {inRound && <span>กดผิด {view?.wrong ?? 0} ครั้ง</span>}
         </div>
       </div>
-      {score !== null && <p className="instrument-result" role="status">ความแม่นยำ <strong>{score}%</strong> · ถูก {view?.count}/{song.total} โน้ต · กดผิด {view?.wrong ?? 0} ครั้ง</p>}
+      {score !== null && <div className="instrument-result mastery-result" role="status">
+        <span>ความแม่นยำ <strong>{score}%</strong> · ถูก {view?.count}/{song.total} โน้ต · กดผิด {view?.wrong ?? 0} ครั้ง</span>
+        {lesson && <MasteryStars stars={gradeStars(score, 100, lesson.maxStars)} max={lesson.maxStars} />}
+      </div>}
     </section>
   )
 }
