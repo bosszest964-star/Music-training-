@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { createPitchDetector } from './pitch'
+import { connectPitchReader, microphoneOptions } from './microphonePitch'
 
 type Input = { stream?: MediaStream; context?: AudioContext; frame?: number }
 
@@ -43,7 +43,7 @@ export function useTuner() {
       // Resume from the click so mobile Safari can activate the audio context.
       const resume = context.resume()
       const request = navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false, channelCount: 1 },
+        audio: microphoneOptions,
       })
       const microphone = request.then(result => {
         if (input.current === session) session.stream = result
@@ -52,19 +52,7 @@ export function useTuner() {
       })
       const [stream] = await Promise.all([microphone, resume])
       if (input.current !== session) return
-      const highpass = context.createBiquadFilter()
-      highpass.type = 'highpass'
-      highpass.frequency.value = 30
-      const lowpass = context.createBiquadFilter()
-      lowpass.type = 'lowpass'
-      lowpass.frequency.value = 3000
-      const analyser = context.createAnalyser()
-      // Capture about 85–170 ms at any sample rate, including high-rate audio interfaces.
-      analyser.fftSize = 2 ** Math.ceil(Math.log2(context.sampleRate * 0.085))
-      const silentOutput = context.createGain()
-      silentOutput.gain.value = 0
-      context.createMediaStreamSource(stream).connect(highpass).connect(lowpass).connect(analyser)
-      analyser.connect(silentOutput).connect(context.destination)
+      const pitch = connectPitchReader(context, stream)
 
       stream.getAudioTracks().forEach(track => track.addEventListener('ended', () => {
         if (input.current !== session) return
@@ -72,16 +60,13 @@ export function useTuner() {
         setError('ไมโครโฟนหยุดทำงาน ลองเปิดใหม่อีกครั้ง')
       }))
 
-      const waveform = new Float32Array(analyser.fftSize)
-      const detect = createPitchDetector(context.sampleRate, waveform.length)
       let lastCheck = 0
       let lastReading = 0
       let filtered: number | null = null
       function read(now: number) {
         if (now - lastCheck >= 65) {
           lastCheck = now
-          analyser.getFloatTimeDomainData(waveform)
-          const next = detect(waveform)
+          const next = pitch.read()
           if (next !== null) {
             filtered = filtered && Math.abs(Math.log2(next / filtered)) < 1 / 24
               ? 0.65 * filtered + 0.35 * next : next
