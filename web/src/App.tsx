@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
-  Activity, AudioLines, ChevronDown, ChevronRight, CircleHelp, Clock3, Cpu, Ear,
+  Activity, AudioLines, ChevronDown, ChevronRight, Clock3, Cpu, Ear,
   Gauge, Hand, Headphones, LayoutGrid, Mic, MicOff, Minus, Music2, Pause, Piano,
-  Play, Plus, Radio, ShieldCheck, Timer,
+  Play, Plus, ShieldCheck, Timer,
 } from 'lucide-react'
 import { meters, useMetronome } from './audio/useMetronome'
 import type { Meter } from './audio/useMetronome'
@@ -18,13 +18,14 @@ import VocalStudio, { VocalHistory } from './vocal/VocalStudio'
 import { useVocalStats } from './vocal/stats'
 import InstrumentStudio, { InstrumentHistory } from './instrument/InstrumentStudio'
 import { useInstrumentStats } from './instrument/stats'
+import StemStudio from './stems/StemStudio'
 
 const sections = [
-  { id: 'tools', icon: LayoutGrid, name: 'เครื่องมือพื้นฐาน', description: '' },
-  { id: 'ear', icon: Ear, name: 'ฝึกหู', description: '' },
-  { id: 'voice', icon: Mic, name: 'ฝึกร้องเพลง', description: '' },
-  { id: 'midi', icon: Piano, name: 'ฝึกเครื่องดนตรีและแกะเพลง', description: '' },
-  { id: 'gpu', icon: Cpu, name: 'เชื่อมต่อ Local GPU', description: 'เชื่อมต่อ GPU ในเครื่องเพื่อแยกเสียงร้องและเครื่องดนตรี' },
+  { id: 'tools', icon: LayoutGrid, name: 'เครื่องมือพื้นฐาน' },
+  { id: 'ear', icon: Ear, name: 'ฝึกหู' },
+  { id: 'voice', icon: Mic, name: 'ฝึกร้องเพลง' },
+  { id: 'midi', icon: Piano, name: 'ฝึกเครื่องดนตรีและแกะเพลง' },
+  { id: 'gpu', icon: Cpu, name: 'แยกไลน์ดนตรี' },
 ] as const
 
 type Section = typeof sections[number]['id']
@@ -189,7 +190,7 @@ function Practice({ practice }: { practice: ReturnType<typeof usePractice> }) {
         <span className="tool-icon purple"><Clock3 size={22} /></span>
         <div className="min-w-0">
           <h2 id="practice-title">เวลาซ้อม</h2>
-          <p>นับเวลาอัตโนมัติเมื่อใช้เมโทรนอม จูนเนอร์ หรือเริ่มรอบฝึกร้อง ฝึกเล่น และแกะเพลง</p>
+          <p>นับเวลาอัตโนมัติเมื่อใช้เมโทรนอม จูนเนอร์ หรือฝึกร้อง ฝึกเล่น แกะเพลง และฟังมิกเซอร์</p>
         </div>
         <span className="local-tag ml-auto"><ShieldCheck size={15} />บันทึกในอุปกรณ์</span>
       </header>
@@ -234,7 +235,8 @@ export default function App() {
   const tuner = useTuner()
   const [vocalActive, setVocalActive] = useState(false)
   const [instrumentActive, setInstrumentActive] = useState(false)
-  const practice = usePractice(metronome.running || tuner.state === 'listening' || vocalActive || instrumentActive)
+  const [stemsActive, setStemsActive] = useState(false)
+  const practice = usePractice(metronome.running || tuner.state === 'listening' || vocalActive || instrumentActive || stemsActive)
   const earStats = useEarStats()
   const vocalStats = useVocalStats()
   const instrumentStats = useInstrumentStats()
@@ -248,6 +250,7 @@ export default function App() {
     }
     if (activeId === 'voice') setVocalActive(false)
     if (activeId === 'midi') setInstrumentActive(false)
+    if (activeId === 'gpu') setStemsActive(false)
     setActiveId(id)
     window.scrollTo(0, 0)
   }
@@ -308,15 +311,7 @@ export default function App() {
         {activeId === 'ear' && <EarTraining stats={earStats} />}
         {activeId === 'voice' && <VocalStudio stats={vocalStats} onActiveChange={setVocalActive} />}
         {activeId === 'midi' && <InstrumentStudio stats={instrumentStats} onActiveChange={setInstrumentActive} />}
-        {activeId === 'gpu' && (
-          <section className="panel placeholder">
-            <span className="tool-icon purple"><active.icon size={24} /></span>
-            <h1>{active.name}</h1>
-            <p>{active.description}</p>
-            <span className="status"><CircleHelp size={14} />รอพัฒนาต่อ</span>
-            <button className="subtle-button" onClick={() => navigate('tools')}><Radio size={17} />กลับไปที่เครื่องมือพื้นฐาน</button>
-          </section>
-        )}
+        {activeId === 'gpu' && <StemStudio onActiveChange={setStemsActive} />}
       </main>
     </div>
   )

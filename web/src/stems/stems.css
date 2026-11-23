@@ -1,0 +1,120 @@
+.stem-hero {
+  border-color: #53506d;
+  background: radial-gradient(ellipse at 78% 30%, #254448 0, transparent 58%), linear-gradient(103deg, #312240, #243840);
+}
+.stem-hero-art {
+  position: absolute; inset: 12px 7% 12px 56%; display: grid; grid-template-columns: repeat(4, 1fr);
+  place-items: center; mask-image: linear-gradient(90deg, transparent, black 24%, black 80%, transparent);
+  background: repeating-linear-gradient(0deg, #def3f218 0 1px, transparent 1px 23px);
+}
+.stem-hero-art i { position: relative; width: 2px; height: 76%; background: #8cb9b1; }
+.stem-hero-art i::after {
+  content: ""; position: absolute; left: -9px; top: 30%; width: 20px; height: 11px; border-radius: 3px;
+  background: #85dcc4; box-shadow: 0 0 15px #a1efd695;
+}
+.stem-hero-art i:nth-child(2)::after { top: 57%; background: #cfb3ff; }
+.stem-hero-art i:nth-child(3)::after { top: 20%; }
+.stem-hero-art i:nth-child(4)::after { top: 69%; background: #eec289; }
+
+.stem-panel { margin-top: 15px; padding: clamp(13px, 2vw, 22px); }
+.stem-panel .field-error { margin: 8px 0; }
+.stem-panel-header > button { margin-left: auto; }
+.stem-modes, .stem-transport, .stem-loop, .stem-track-buttons, .stem-dialog-links {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+}
+.stem-modes { margin: 12px 0; }
+.stem-modes button[aria-pressed="true"], .stem-loop button[aria-pressed="true"] {
+  background: #3d2f53; border-color: #6b5593; color: #e4d1fe;
+}
+.stem-source-fields { padding: 10px 11px; border-radius: 9px; border: 1px solid #3a3048; background: var(--inset); }
+.stem-field { display: grid; gap: 4px; min-width: 0; color: #ddd1eb; font-size: .88rem; }
+.stem-field input[type="url"], .stem-field input[type="password"] {
+  width: 100%; min-height: 43px; padding: 6px 9px; border-radius: 7px; border: 1px solid #514160;
+  background: var(--surface); color: var(--text);
+}
+.stem-panel input[type="range"], .stem-panel progress { accent-color: #c1a3f4; }
+.stem-file { position: relative; margin-top: 6px; overflow: hidden; cursor: pointer; }
+.stem-file input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+.stem-file:focus-within { outline: 2px solid #c2a4ff; outline-offset: 2px; }
+.stem-file:has(input:disabled) { opacity: .55; cursor: default; }
+.stem-hint { color: var(--muted); font-size: .92rem; margin-block: 5px; }
+.stem-import, .stem-engine-fields { display: grid; gap: 8px; }
+.stem-import { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 8px 0 12px; }
+.stem-import input {
+  width: 100%; color: var(--muted); padding: 5px; font-size: .78rem; border: 1px solid #4d3d60; border-radius: 7px;
+}
+.stem-import input::file-selector-button {
+  cursor: pointer; padding: 6px 8px; color: #ecdfff; background: #413151; border: 0; border-radius: 5px; margin-right: 6px;
+}
+.stem-engine-fields { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; align-items: end; }
+.stem-connection { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 9px; color: var(--muted); margin-top: 8px; }
+.stem-connection i { width: 9px; height: 9px; border-radius: 50%; background: #89718f; }
+.stem-connection i[data-ready] { background: #8be2bc; box-shadow: 0 0 10px #91e0bb65; }
+.stem-connection span { display: inline-flex; align-items: center; gap: 4px; color: #c7afed; }
+.stem-progress {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; margin-top: 10px;
+  padding: 8px 10px; border-radius: 8px; background: #352945; border: 1px solid #544166;
+}
+.stem-progress progress { display: block; width: 100%; margin-top: 5px; height: 10px; }
+
+.stem-project { min-width: 0; overflow-wrap: anywhere; }
+.stem-console {
+  display: grid; gap: 8px 13px; grid-template-columns: minmax(0, 1fr) auto;
+  padding: 11px; margin: 12px 0; border: 1px solid #3d314c; border-radius: 9px; background: var(--inset);
+}
+.stem-time { grid-column: 1 / -1; display: grid; gap: 3px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.stem-time input { width: 100%; }
+.stem-rate { display: grid; grid-template-columns: auto auto; align-items: center; justify-content: space-between; min-width: min(164px, 100%); }
+.stem-rate input { grid-column: 1 / -1; width: 100%; }
+.stem-console .field-error { grid-column: 1 / -1; margin: 0; }
+.stem-strips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.stem-strip {
+  min-width: 0; padding: 10px; border: 1px solid #4a3b59; border-top: 2px solid var(--stem-accent);
+  border-radius: 9px; background: linear-gradient(0deg, var(--inset) 80%, #2c253a);
+}
+.stem-strip[data-audible="false"] { border-top-color: #685c78; }
+.stem-vocals { --stem-accent: #d0afff; }
+.stem-drums { --stem-accent: #f0bb89; }
+.stem-bass { --stem-accent: #88dff2; }
+.stem-other { --stem-accent: #9be3bd; }
+.stem-strip header { display: flex; align-items: center; gap: 7px; color: var(--stem-accent); min-height: 31px; }
+.stem-strip h3 { font-size: .99rem; font-weight: 700; }
+.stem-strip header span { display: grid; place-items: center; width: 29px; height: 29px; }
+.stem-strip .stem-field { grid-template-columns: 1fr auto; margin-bottom: 9px; }
+.stem-strip input { grid-column: 1 / -1; width: 100%; accent-color: var(--stem-accent) !important; min-height: 25px; }
+.stem-wave, .stem-band {
+  display: flex; align-items: center; min-height: 38px; margin: 6px 0 9px; padding: 3px; border-radius: 6px; background: #241c30;
+}
+.stem-wave { gap: 1px; height: 41px; overflow: hidden; }
+.stem-wave i { flex: 1; min-width: 1px; height: var(--peak); border-radius: 3px; background: var(--stem-accent); opacity: .8; }
+.stem-strip[data-audible="false"] .stem-wave { opacity: .46; }
+.stem-band { padding-inline: 6px; color: var(--muted); font-size: .78rem; }
+.stem-track-buttons { gap: 5px; }
+.stem-track-buttons button { flex: 1; padding-inline: 6px; min-height: 39px; }
+.stem-track-buttons button:first-child[aria-pressed="true"] { color: #ffbcbc; border-color: #865362; background: #512d43; }
+.stem-track-buttons button:last-child[aria-pressed="true"] { color: #a8e8cd; border-color: #4c866f; background: #274b43; }
+
+.stem-dialog {
+  width: min(590px, calc(100vw - 24px)); max-height: min(85vh, 650px); margin: auto; padding: 17px;
+  border: 1px solid #67527c; border-radius: 13px; color: var(--text); background: #232033;
+}
+.stem-dialog::backdrop { background: #0d0a15b8; }
+.stem-dialog-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.stem-dialog h2 { font-size: 1.18rem; font-weight: 750; }
+.stem-dialog ol { list-style: decimal; margin: 10px 0 10px 21px; }
+.stem-dialog li { padding-left: 3px; margin-block: 5px; }
+.stem-dialog p { color: var(--muted); margin-block: 10px; }
+.stem-dialog code { color: #e9d6ff; overflow-wrap: anywhere; }
+
+@media (max-width: 950px) {
+  .stem-import { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stem-console { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .stem-hero-art { opacity: .45; }
+  .stem-engine-fields, .stem-strips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stem-engine-fields > label:first-child, .stem-engine-fields > button { grid-column: 1 / -1; }
+  .stem-engine-fields > label:nth-child(2) { grid-column: 1 / -1; }
+  .stem-panel-header { flex-wrap: wrap; }
+  .stem-panel-header > button { margin-left: 0; }
+}

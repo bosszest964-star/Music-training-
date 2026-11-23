@@ -3,3 +3,6 @@ dist/
 .vercel/
 *.local
 .DS_Store
+.venv/
+__pycache__/
+/local-gpu-engine/web-dist/

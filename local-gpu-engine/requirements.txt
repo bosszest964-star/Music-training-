@@ -1,0 +1,7 @@
+# Keep torch and torchaudio on the same release. The launchers select their wheel index.
+torch==2.6.0
+torchaudio==2.6.0
+demucs==4.0.1
+soundfile>=0.12,<1
+fastapi>=0.115,<1
+uvicorn>=0.34,<1
