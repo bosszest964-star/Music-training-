@@ -374,3 +374,16 @@ button, select, input { -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: .01ms !important; }
 }
+
+.piano-load {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  color: var(--muted);
+  font-size: .88rem;
+  margin: 9px 0;
+}
+.piano-load > button { min-height: 33px; padding: 4px 9px; font-size: .84rem; }
+.app-credits { margin: 22px 0 5px; color: var(--muted); text-align: center; font-size: .79rem; }
+.app-credits a { color: #cfb3f5; text-decoration: underline; text-underline-offset: .21em; }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { playNote } from '../audio/noteSynth'
 import type { SynthVoice } from '../audio/noteSynth'
+import { playPiano } from '../audio/pianoEngine'
 
 export function useStudioSound() {
   const session = useRef<{ context: AudioContext; output: GainNode } | null>(null)
@@ -49,5 +50,17 @@ export function useStudioSound() {
     })
   }
 
-  return { ready, stop, sound, error }
+  async function piano(midi: number, velocity: number) {
+    const active = await ready()
+    if (!active) return undefined
+    try {
+      const { context, output } = active
+      return playPiano(context, output, { midi, time: context.currentTime + 0.018, level: 0.31, velocity })
+    } catch {
+      setError('เล่นเสียงเปียโนไม่ได้ ลองแตะอีกครั้ง')
+      return undefined
+    }
+  }
+
+  return { ready, stop, sound, piano, error }
 }

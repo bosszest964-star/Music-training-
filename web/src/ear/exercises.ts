@@ -6,7 +6,7 @@ export const topics = {
 } as const
 
 export type Topic = keyof typeof topics
-export type Game = 'degree' | 'harmony' | 'eq'
+export type PitchGame = 'degree' | 'harmony'
 export type Difficulty = 'beginner' | 'diatonic' | 'chromatic'
 export type HarmonyMode = 'mixed' | 'melodic' | 'harmonic' | 'chord'
 
@@ -23,7 +23,7 @@ interface Cue {
   duration: number
 }
 
-export type Sound = { cues: Cue[] } | { frequency: number }
+export type Sound = { cues: Cue[] }
 
 export interface Question {
   topic: Topic
@@ -74,16 +74,6 @@ const chords = [
   [[0, 4, 7, 10], 'Dom7', 'โดมิแนนต์เซเว่น', 'คอร์ดเมเจอร์เติมคู่เจ็ดไมเนอร์ คู่สามกับคู่เจ็ดเกิดไตรโทนที่ชวนให้คลี่คลาย'],
 ] as const
 
-const eqBands = [
-  [125, '125 Hz', 'เบสล่าง', 'ฟังน้ำหนักทุ้มลึกและเสียงครางที่เพิ่มขึ้น'],
-  [250, '250 Hz', 'เบสบน', 'ฟังความอุ่นและความหนาที่เพิ่มขึ้น มากเกินไปอาจฟังอื้อ'],
-  [500, '500 Hz', 'กลางต่ำ', 'ฟังเนื้อเสียงทึบคล้ายเสียงก้องในกล่อง'],
-  [1000, '1 kHz', 'กลาง', 'ฟังเนื้อเสียงตรงกลางที่เด่นขึ้น คล้ายเสียงแหลมปนทุ้มแบบขึ้นจมูก'],
-  [2000, '2 kHz', 'กลางสูง', 'ฟังขอบและความพุ่งของเสียงที่ชัดขึ้น'],
-  [4000, '4 kHz', 'ความคมชัด', 'ฟังความคมและรายละเอียดด้านหน้าของเสียง'],
-  [8000, '8 kHz', 'แหลม', 'ฟังประกายแหลมและเสียงซ่าที่เพิ่มขึ้น'],
-] as const
-
 type Item<T> = readonly [T, string, string, string]
 
 function pick<T extends Item<unknown>>(items: readonly T[], previousId?: string) {
@@ -95,7 +85,7 @@ function toChoice([, id, detail, explanation]: Item<unknown>): Choice {
   return { id, label: id, detail, explanation }
 }
 
-export function makeQuestion(game: Game, difficulty: Difficulty, mode: HarmonyMode, previous?: Question): Question {
+export function makeQuestion(game: PitchGame, difficulty: Difficulty, mode: HarmonyMode, previous?: Question): Question {
   const previousId = previous?.correct.id
   const root = 55 + Math.floor(Math.random() * 12)
   const notes = (offsets: readonly number[]) => offsets.map(offset => root + offset)
@@ -114,15 +104,6 @@ export function makeQuestion(game: Game, difficulty: Difficulty, mode: HarmonyMo
           { notes: notes([item[0]]), at: 2.14, duration: 0.68 },
         ],
       },
-    }
-  }
-  if (game === 'eq') {
-    const item = pick(eqBands, previousId)
-    return {
-      topic: 'eq', choices: eqBands.map(toChoice), correct: toChoice(item),
-      prompt: 'เสียง B ถูกบูสต์ที่ย่านไหน?',
-      context: 'ฟังพิงก์นอยส์ต้นฉบับ A แล้วเทียบกับเสียง B ที่บูสต์ EQ หนึ่งย่าน',
-      sound: { frequency: item[0] },
     }
   }
   const styles = ['melodic', 'harmonic', 'chord'] as const

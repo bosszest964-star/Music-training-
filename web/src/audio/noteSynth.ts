@@ -27,8 +27,9 @@ const partials = {
   ],
 }
 
-export function playNote(context: AudioContext, output: AudioNode, midi: number, time: number, duration: number, voice: SynthVoice, level: number) {
+export function playNote(context: BaseAudioContext, output: AudioNode, midi: number, time: number, duration: number, voice: SynthVoice, level: number, onEnd?: () => void) {
   const frequency = midiToHz(midi)
+  const oscillators = new Set<OscillatorNode>()
   for (const partial of partials[voice]) {
     const oscillator = context.createOscillator()
     oscillator.frequency.value = frequency * partial.ratio
@@ -41,7 +42,15 @@ export function playNote(context: AudioContext, output: AudioNode, midi: number,
     envelope.gain.exponentialRampToValueAtTime(peak * (voice === 'soft' ? 0.78 : 0.15), time + duration * partial.tail)
     envelope.gain.exponentialRampToValueAtTime(0.0001, end)
     oscillator.connect(envelope).connect(output)
+    oscillator.onended = () => {
+      oscillator.disconnect()
+      envelope.disconnect()
+      oscillators.delete(oscillator)
+      if (oscillators.size === 0) onEnd?.()
+    }
+    oscillators.add(oscillator)
     oscillator.start(time)
     oscillator.stop(end + 0.01)
   }
+  return (stopAt: number) => oscillators.forEach(oscillator => oscillator.stop(stopAt))
 }

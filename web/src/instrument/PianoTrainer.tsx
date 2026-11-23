@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, FileMusic, Mic, Pause, Play, Square, Usb } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { noteLabel } from '../audio/pitch'
+import PianoLoadStatus from '../audio/PianoLoadStatus'
 import { useMicrophonePitch } from '../audio/useMicrophonePitch'
 import { createPianoRound, pianoKeys } from './pianoGame'
 import type { PianoRound } from './pianoGame'
@@ -25,6 +26,7 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
   const [score, setScore] = useState<number | null>(null)
   const [held, setHeld] = useState<ReadonlySet<number>>(new Set())
   const presses = useRef(new Map<string, number>())
+  const sounding = useRef(new Map<string, { release?: () => void }>())
   const game = useRef<PianoRound | null>(null)
   const running = useRef(false)
   const elapsed = useRef(0)
@@ -41,8 +43,17 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
     setHeld(new Set(presses.current.values()))
   }
 
-  function keyEvent(id: string, midi: number, down: boolean) {
+  function releaseKey(id: string) {
+    const heldNote = sounding.current.get(id)
+    if (!heldNote) return
+    heldNote.release?.()
+    sounding.current.delete(id)
+    micSilentUntil.current = clock() + 0.65
+  }
+
+  function keyEvent(id: string, midi: number, down: boolean, velocity = 0.76) {
     if (!down) {
+      releaseKey(id)
       if (presses.current.delete(id)) updateHeld()
       return
     }
@@ -50,8 +61,12 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
     presses.current.set(id, midi)
     updateHeld()
     if (!id.startsWith('mic:')) {
-      micSilentUntil.current = clock() + 0.72
-      void sound.sound([midi], 'piano', 0.48)
+      const key: { release?: () => void } = {}
+      sounding.current.set(id, key)
+      void sound.piano(midi, velocity).then(release => {
+        if (sounding.current.get(id) === key) key.release = release
+        else release?.()
+      })
     }
     if (!running.current) return
     game.current?.press(midi, clock())
@@ -61,7 +76,12 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
   const midiInput = useMidiInput({
     note: keyEvent,
     clear() {
-      for (const id of presses.current.keys()) if (id.startsWith('midi:')) presses.current.delete(id)
+      for (const id of presses.current.keys()) {
+        if (id.startsWith('midi:')) {
+          releaseKey(id)
+          presses.current.delete(id)
+        }
+      }
       updateHeld()
     },
   })
@@ -89,7 +109,7 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
       onLost: clear,
       onFrame(_time, pitch) {
         if (!pitch) return
-        const note = pitch.midi === null || clock() < micSilentUntil.current ? null : Math.round(pitch.midi)
+        const note = pitch.midi === null || sounding.current.size > 0 || clock() < micSilentUntil.current ? null : Math.round(pitch.midi)
         if (note !== pending) {
           pending = note
           pendingAt = pitch.time
@@ -138,6 +158,8 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
       if (!document.hidden || !running.current) return
       running.current = false
       elapsed.current += clock() - started.current
+      for (const key of sounding.current.values()) key.release?.()
+      sounding.current.clear()
       presses.current.clear()
       setHeld(new Set())
       onActiveChange(false)
@@ -153,6 +175,7 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
 
   useEffect(() => () => {
     importId.current += 1
+    sounding.current.clear()
     onActiveChange(false)
   }, [onActiveChange])
 
@@ -276,6 +299,7 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
       </div>
       {mic.state === 'listening' && <p className="instrument-hint">ไมค์รับทีละโน้ต สำหรับคอร์ดในโหมดรอให้เล่นแยกทีละเสียง</p>}
       {(mic.error || midiInput.error || sound.error) && <p className="field-error" role="alert">{mic.error || midiInput.error || sound.error}</p>}
+      <PianoLoadStatus notes={[...held, ...song.cues.slice(0, 8).flatMap(cue => cue.notes.map(note => note.midi))]} />
       <div className="instrument-piano" ref={scroller} tabIndex={0} aria-label="เปียโน เลื่อนซ้ายขวาเพื่อเปลี่ยนช่วงลิ่มนิ้ว">
         <div className="instrument-lanes" style={{ '--white-count': layout.whites } as CSSProperties}>
           <PianoRoll song={song} layout={layout} game={game} moving={playing} />
@@ -288,7 +312,8 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
                 onPointerDown={event => {
                   if (event.button !== 0) return
                   event.currentTarget.setPointerCapture?.(event.pointerId)
-                  keyEvent(`pointer:${event.pointerId}`, key.midi, true)
+                  const velocity = event.pointerType === 'mouse' || !event.pressure ? 0.76 : 0.32 + 0.68 * event.pressure
+                  keyEvent(`pointer:${event.pointerId}`, key.midi, true, velocity)
                 }}
                 onLostPointerCapture={event => keyEvent(`pointer:${event.pointerId}`, key.midi, false)}
                 onPointerUp={event => keyEvent(`pointer:${event.pointerId}`, key.midi, false)}
