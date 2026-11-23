@@ -9,6 +9,7 @@ import '@fontsource/ibm-plex-sans-thai/thai-600.css'
 import '@fontsource/ibm-plex-sans-thai/thai-700.css'
 import './styles.css'
 import './ear/ear.css'
+import './vocal/vocal.css'
 
 function Root() {
   const [dismissed, setDismissed] = useState(false)

@@ -13,8 +13,16 @@ export function noteLabel(midi: number) {
   return noteNames[((midi % 12) + 12) % 12] + (Math.floor(midi / 12) - 1)
 }
 
+export function hzToMidi(hz: number) {
+  return 69 + 12 * Math.log2(hz / 440)
+}
+
+export function midiToHz(midi: number) {
+  return 440 * 2 ** ((midi - 69) / 12)
+}
+
 export function getReading(hz: number, instrument: Instrument, selectedString: number | null) {
-  const measuredMidi = 69 + 12 * Math.log2(hz / 440)
+  const measuredMidi = hzToMidi(hz)
   const strings: readonly number[] = instruments[instrument].strings
   const targetMidi = selectedString ?? (strings.length
     ? strings.reduce((closest, string) =>
