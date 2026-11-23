@@ -29,6 +29,14 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2}'],
         cleanupOutdatedCaches: true,
+        runtimeCaching: [{
+          urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname.startsWith('/audio/salamander/') && url.pathname.endsWith('.mp3'),
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'salamander-piano-v1',
+            expiration: { maxEntries: 30, maxAgeSeconds: 90 * 24 * 60 * 60 },
+          },
+        }],
       },
     }),
   ],

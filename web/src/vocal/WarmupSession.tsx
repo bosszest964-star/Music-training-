@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Activity, CheckCircle2, Minus, Plus, RotateCcw, Square, Volume2 } from 'lucide-react'
 import { playNote } from '../audio/noteSynth'
+import PianoLoadStatus from '../audio/PianoLoadStatus'
+import { pianoReady, playPiano } from '../audio/pianoEngine'
 import { noteLabel } from '../audio/pitch'
 import { bpmLimits, buildWarmup, fittedRoot, limitRoot, scoreRound, targetAt, tolerance, warmups } from './music'
 import type { VocalRange, WarmupId, WarmupPlan } from './music'
@@ -17,13 +19,14 @@ const initialFeedback = { target: null as number | null, input: null as number |
 
 function scheduleDemo(context: AudioContext, plan: WarmupPlan) {
   const start = context.currentTime + 0.08
+  const sampled = pianoReady(plan.targets.map(target => target.from))
   for (const target of plan.targets) {
     const duration = Math.min(target.end - target.start, plan.beat) * 0.68
-    playNote(context, context.destination, target.from, start + target.start, duration, 'piano', 0.25)
+    playPiano(context, context.destination, { midi: target.from, time: start + target.start, duration, level: 0.25, sampled })
   }
   const end = start + plan.duration
   if (plan.id === 'siren') {
-    playNote(context, context.destination, plan.root, end - plan.beat, plan.beat * 0.6, 'piano', 0.25)
+    playPiano(context, context.destination, { midi: plan.root, time: end - plan.beat, duration: plan.beat * 0.6, level: 0.25, sampled })
   }
   for (let beat = 0; beat < 2; beat += 1) {
     playNote(context, context.destination, 84, end + beat * plan.beat, 0.07, 'soft', 0.16)
@@ -204,6 +207,7 @@ export default function WarmupSession({ range, save, onActiveChange }: {
             : 'คีย์ที่เลือกมีโน้ตอยู่นอกช่วงเสียงที่วัดไว้ กดคืนคีย์แนะนำเพื่อให้พอดีกับช่วงเสียง'}
         </p>
       )}
+      <PianoLoadStatus notes={plan.targets.map(target => target.from)} />
       <PitchGraph plan={plan} trace={trace} moving={phase === 'singing'} />
       <div className="vocal-readout">
         <div><span>เป้าหมาย</span><strong>{feedback.target === null ? '—' : noteLabel(Math.round(feedback.target))}</strong></div>

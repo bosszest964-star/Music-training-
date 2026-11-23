@@ -312,6 +312,11 @@ export default function App() {
         {activeId === 'voice' && <VocalStudio stats={vocalStats} onActiveChange={setVocalActive} />}
         {activeId === 'midi' && <InstrumentStudio stats={instrumentStats} onActiveChange={setInstrumentActive} />}
         {activeId === 'gpu' && <StemStudio onActiveChange={setStemsActive} />}
+        <footer className="app-credits">
+          <a href="https://github.com/Tonejs/audio/tree/master/salamander">Salamander Grand Piano</a>
+          {' โดย Alexander Holm · '}
+          <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>
+        </footer>
       </main>
     </div>
   )

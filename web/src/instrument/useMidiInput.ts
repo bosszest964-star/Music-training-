@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 type InputHandlers = {
-  note: (key: string, midi: number, down: boolean) => void
+  note: (key: string, midi: number, down: boolean, velocity?: number) => void
   clear: () => void
 }
 
@@ -65,7 +65,7 @@ export function useMidiInput(handlers: InputHandlers) {
             const [status, pitch, velocity] = event.data
             const command = status & 0xf0
             if ((command !== 0x90 && command !== 0x80) || pitch > 127) return
-            current.current.note(`midi:${id}:${status & 0x0f}:${pitch}`, pitch, command === 0x90 && velocity > 0)
+            current.current.note(`midi:${id}:${status & 0x0f}:${pitch}`, pitch, command === 0x90 && velocity > 0, velocity / 127)
           }
         }
         ports.current = next
