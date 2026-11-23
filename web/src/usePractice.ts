@@ -99,3 +99,11 @@ export function usePractice(toolActive: boolean) {
 
   return { elapsed, today, totals, running, storageError, toggle }
 }
+
+export function formatDuration(seconds: number) {
+  const rounded = Math.round(seconds)
+  const hours = Math.floor(rounded / 3600)
+  const minutes = Math.floor(rounded / 60) % 60
+  const rest = rounded % 60
+  return hours ? `${hours} ชม. ${minutes} นาที` : minutes ? `${minutes} นาที ${rest} วินาที` : `${rest} วินาที`
+}

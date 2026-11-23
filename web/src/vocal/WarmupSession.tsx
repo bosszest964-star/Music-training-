@@ -6,7 +6,7 @@ import { bpmLimits, buildWarmup, fittedRoot, limitRoot, scoreRound, targetAt, to
 import type { VocalRange, WarmupId, WarmupPlan } from './music'
 import PitchGraph from './PitchGraph'
 import type { PitchTrace } from './PitchGraph'
-import { useVocalMic } from './useVocalMic'
+import { useMicrophonePitch } from '../audio/useMicrophonePitch'
 import type { VocalStats } from './stats'
 
 type Phase = 'idle' | 'demo' | 'count' | 'singing' | 'complete'
@@ -44,7 +44,7 @@ export default function WarmupSession({ range, save, onActiveChange }: {
   const [count, setCount] = useState(2)
   const [feedback, setFeedback] = useState(initialFeedback)
   const [result, setResult] = useState<ReturnType<typeof scoreRound> | null>(null)
-  const mic = useVocalMic()
+  const mic = useMicrophonePitch()
   const trace = useRef<PitchTrace | null>(null)
   const [sessionPlan, setSessionPlan] = useState<WarmupPlan | null>(null)
   const span = warmups[exercise].span

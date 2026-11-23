@@ -1,8 +1,9 @@
+import { pitchSampleInterval } from '../audio/microphonePitch'
+
 export const pitchLimits = { low: 32, high: 90 }
 export const bpmLimits = { min: 40, max: 180 }
 export const tolerance = 0.5
 export const holdSeconds = 1.5
-export const sampleInterval = 0.05
 
 export interface VocalRange {
   low: number
@@ -110,7 +111,7 @@ export function scoreRound(plan: WarmupPlan, points: readonly PitchPoint[]) {
   let index = 0
 
   // Evaluate evenly spaced time slots so rendering FPS cannot change the score.
-  for (let time = sampleInterval / 2; time < plan.duration; time += sampleInterval) {
+  for (let time = pitchSampleInterval / 2; time < plan.duration; time += pitchSampleInterval) {
     const target = targetAt(plan, time)
     if (!target?.settled) continue
     total += 1

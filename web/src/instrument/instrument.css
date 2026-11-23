@@ -1,0 +1,163 @@
+.instrument-hero {
+  border-color: #4e426c;
+  background: radial-gradient(ellipse at 78% 30%, #4d467d, transparent 56%), linear-gradient(98deg, #2d2145, #323555);
+}
+.instrument-hero-art {
+  position: absolute;
+  display: flex;
+  gap: 5px;
+  align-items: end;
+  inset: 17px 6% 0 53%;
+  padding-inline: 6%;
+  background: repeating-linear-gradient(90deg, #bea7eb17 0 1px, transparent 1px 29px);
+  mask-image: linear-gradient(90deg, transparent, #000 24%, #000 84%, transparent);
+}
+.instrument-hero-art i { flex: 1; height: 63%; margin-bottom: 12%; border-radius: 6px; background: #b692ee; box-shadow: 0 0 18px #b293f164; }
+.instrument-hero-art i:nth-child(2n) { height: 38%; margin-bottom: 37%; background: #9984da; }
+.instrument-hero-art i:nth-child(3n) { margin-bottom: 19%; background: #8de6d0; }
+.instrument-hero-art i:nth-child(5) { height: 32%; margin-bottom: 33%; }
+
+.instrument-tabs, .instrument-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.instrument-tabs { margin: 15px 0 12px; }
+.instrument-tabs button[aria-pressed="true"], .instrument-toolbar button[aria-pressed="true"] {
+  border-color: #684f88; color: #e2cfff; background: #3a2c4d;
+}
+.instrument-panel { padding: clamp(13px, 2vw, 22px); }
+.instrument-panel > .instrument-toolbar { margin-top: 12px; }
+.instrument-panel .field-error { margin: 8px 0; }
+.instrument-field { display: grid; gap: 4px; color: #ddd3ec; font-size: .875rem; min-width: min(180px, 100%); }
+.instrument-field select {
+  display: block; max-width: min(330px, 76vw); width: 100%; min-height: 43px;
+  appearance: none; background: var(--inset); color: var(--text);
+  padding: 5px 31px 5px 9px; border: 1px solid #483b5a; border-radius: 8px;
+}
+.instrument-select { position: relative; }
+.instrument-select svg { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.instrument-file { position: relative; align-self: end; cursor: pointer; overflow: hidden; }
+.instrument-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.instrument-file:focus-within { outline: 2px solid #c5a4fb; outline-offset: 2px; }
+.instrument-file:has(input:disabled) { opacity: .55; cursor: default; }
+.instrument-toggle { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; font-size: .89rem; }
+.instrument-panel input[type="checkbox"], .instrument-panel input[type="range"], .instrument-panel progress { accent-color: #b99aee; }
+.instrument-hint { color: var(--muted); font-size: .88rem; margin: 5px 0; }
+.instrument-inputs .instrument-hint { margin: 0; }
+
+.instrument-piano {
+  margin-top: 13px; overflow-x: auto; border: 1px solid #423451;
+  border-radius: 10px; background: #171625;
+}
+.instrument-lanes { min-width: calc(var(--white-count) * 32px); }
+.instrument-roll { display: block; width: 100%; height: clamp(175px, 29vw, 315px); touch-action: pan-x pan-y; }
+.instrument-keys { position: relative; height: clamp(86px, 12vw, 116px); user-select: none; touch-action: none; }
+.instrument-key {
+  position: absolute;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  top: 0;
+  left: calc(100% * var(--center) / var(--white-count));
+  transform: translateX(-50%);
+  height: 100%;
+  width: calc(100% / var(--white-count));
+  padding: 0 0 8px;
+  border: 1px solid #c0b6ce;
+  border-radius: 0 0 5px 5px;
+  color: #31263f;
+  background: #ece5f3;
+  font-size: clamp(.66rem, 1.3vw, .85rem);
+  font-weight: 800;
+  touch-action: none;
+}
+.instrument-key + .instrument-key { border-left-width: 0; }
+.instrument-key.black {
+  width: calc(61% / var(--white-count));
+  height: 60%;
+  z-index: 1;
+  padding-bottom: 6px;
+  border: 1px solid #534869;
+  color: #eee3ff;
+  background: #2d2341;
+  font-size: max(.57rem, min(.9vw, .75rem));
+}
+.instrument-key[data-target] { background: #ffd396; color: #362415; }
+.instrument-key[data-held] { background: #89ddb9; color: #15322d; }
+.instrument-key:focus-visible { z-index: 2; outline-offset: -3px; }
+.instrument-playbar { gap: 8px 10px; }
+.instrument-note-status { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 13px; color: var(--muted); font-size: .9rem; }
+.instrument-note-status strong { color: #e1c9ff; }
+.instrument-result { margin-top: 10px; padding: 9px 12px; background: #263b36; color: #b3eed5; border: 1px solid #416c60; border-radius: 9px; }
+
+.instrument-chord-list { flex-wrap: wrap; }
+.instrument-chord-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.27fr); gap: 12px; margin-top: 12px; }
+.instrument-chord-card, .instrument-progression, .instrument-deck-controls > div {
+  min-width: 0; padding: 13px; border: 1px solid #3e324f; border-radius: 10px; background: var(--inset);
+}
+.instrument-chord-card { text-align: center; }
+.instrument-chord-name { font-size: 1.55rem; color: #d4b5ff; }
+.instrument-fretboard {
+  display: grid;
+  grid-template-columns: repeat(var(--strings), minmax(0, 1fr)) 21px;
+  width: min(245px, 100%);
+  margin: 5px auto;
+}
+.instrument-string { display: grid; gap: 2px; font-size: .83rem; }
+.instrument-string > span { min-height: 20px; color: #d1baf2; }
+.instrument-frets { border-top: 3px solid #9d8cae; }
+.instrument-frets > div { position: relative; height: 26px; border-bottom: 1px solid #554767; }
+.instrument-frets > div::before { content: ""; position: absolute; top: 0; bottom: 0; width: 1px; left: 50%; background: #8a789c; }
+.instrument-frets i {
+  display: grid; place-items: center; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 20px; height: 20px; border-radius: 50%; background: #c7a4fb; color: #1d122c; font-weight: 800; font-style: normal;
+}
+.instrument-fret-labels { display: grid; grid-template-rows: repeat(4, 26px); margin-top: 24px; padding-left: 4px; color: var(--muted); font-size: .75rem; }
+.instrument-fret-labels span { align-self: center; }
+.instrument-progression h3, .instrument-deck-controls h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+.instrument-progression > .instrument-toolbar { margin-top: 10px; }
+.instrument-progression .instrument-field strong { color: #d5b7fa; }
+.instrument-round-cue { display: grid; gap: 4px; margin-top: 10px; color: #d9c2ff; }
+.instrument-round-cue progress { width: 100%; height: 9px; }
+
+.instrument-filename { overflow-wrap: anywhere; min-width: 0; color: #e0c8ff; }
+.instrument-deck-empty {
+  display: grid; place-items: center; gap: 8px; text-align: center; min-height: 165px;
+  padding: 10px; margin-top: 12px; background: var(--inset); border: 1px solid #3a2e4c; border-radius: 10px; color: #c2accd;
+}
+.instrument-waveform { display: block; width: 100%; height: clamp(115px, 19vw, 185px); margin-top: 11px; border-radius: 9px; cursor: pointer; touch-action: pan-y; }
+.instrument-position { display: grid; gap: 2px; margin-top: 10px; }
+.instrument-position span { color: var(--muted); font-variant-numeric: tabular-nums; font-size: .85rem; }
+.instrument-deck-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 9px; margin: 12px 0 0; }
+.instrument-speed { margin-left: 4px; }
+
+.instrument-history { margin-top: 16px; }
+.instrument-open { flex: none; margin-left: auto; }
+.instrument-metrics {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0;
+}
+.instrument-metrics > div { padding: 8px 10px; border: 1px solid #3e324d; border-radius: 9px; background: var(--inset); min-width: 0; }
+.instrument-metrics dt { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: .87rem; }
+.instrument-metrics dt svg { flex: none; color: #bca1ed; }
+.instrument-metrics dd { color: #e1c9ff; font-size: clamp(1.08rem, 2.3vw, 1.33rem); font-weight: 800; margin-top: 4px; }
+.instrument-history-list li {
+  display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: 3px 12px;
+  align-items: center; padding: 7px 2px; border-bottom: 1px solid #3a304a;
+}
+.instrument-history-list li strong { overflow-wrap: anywhere; }
+.instrument-history-list time { display: block; }
+.instrument-history-list time, .instrument-history-list li > span { color: var(--muted); font-size: .83rem; }
+.instrument-history-list li > strong { color: #cbabf8; }
+.instrument-history > button { margin-top: 9px; }
+
+@media (max-width: 690px) {
+  .instrument-hero-art { opacity: .43; }
+  .instrument-chord-workspace, .instrument-deck-controls { grid-template-columns: 1fr; }
+  .instrument-panel .panel-header { flex-wrap: wrap; }
+  .instrument-panel .panel-header > div { flex: 1; }
+  .instrument-toolbar button, .instrument-tabs button, .instrument-file { min-height: 44px; }
+}
+@media (max-width: 420px) {
+  .instrument-open { margin-left: 53px; }
+  .instrument-history-list li { grid-template-columns: 1fr auto; }
+  .instrument-history-list li > span { grid-row: 2; }
+  .instrument-history-list li > strong { grid-column: 2; grid-row: 1 / 3; }
+  .instrument-metrics dt svg { display: none; }
+}

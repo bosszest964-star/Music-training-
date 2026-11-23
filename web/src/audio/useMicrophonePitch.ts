@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { connectPitchReader, microphoneOptions } from '../audio/microphonePitch'
-import { hzToMidi } from '../audio/pitch'
-import { sampleInterval } from './music'
+import { connectPitchReader, microphoneOptions, pitchSampleInterval } from './microphonePitch'
+import { hzToMidi } from './pitch'
 
 interface Input {
   context: AudioContext
@@ -27,7 +26,7 @@ function microphoneError(cause: unknown) {
   return 'เปิดไมโครโฟนไม่ได้ ตรวจสอบสิทธิ์และอุปกรณ์เสียงแล้วลองใหม่'
 }
 
-export function useVocalMic() {
+export function useMicrophonePitch() {
   const [state, setState] = useState<'idle' | 'requesting' | 'activation' | 'listening'>('idle')
   const [error, setError] = useState('')
   const current = useRef<Input | null>(null)
@@ -99,7 +98,7 @@ export function useVocalMic() {
           function read() {
             if (current.current !== session) return
             const time = context.currentTime
-            if (time - lastSample >= sampleInterval - 0.008) {
+            if (time - lastSample >= pitchSampleInterval - 0.008) {
               lastSample = time
               const hz = reader.read()
               capture.onFrame(time, { midi: hz === null ? null : hzToMidi(hz), time: time - reader.windowSeconds / 2 })
