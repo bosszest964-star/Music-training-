@@ -15,7 +15,7 @@ export default defineConfig({
         name: 'ห้องซ้อม — เครื่องมือฝึกดนตรี',
         short_name: 'ห้องซ้อม',
         lang: 'th',
-        description: 'เมโทรนอม จูนเนอร์ และบันทึกเวลาซ้อม',
+        description: 'ฝึกหู เมโทรนอม จูนเนอร์ และบันทึกเวลาซ้อม',
         start_url: '/',
         display: 'standalone',
         theme_color: '#15131e',
