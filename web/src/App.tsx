@@ -16,12 +16,14 @@ import EarTraining from './ear/EarTraining'
 import { useEarStats } from './ear/stats'
 import VocalStudio, { VocalHistory } from './vocal/VocalStudio'
 import { useVocalStats } from './vocal/stats'
+import InstrumentStudio, { InstrumentHistory } from './instrument/InstrumentStudio'
+import { useInstrumentStats } from './instrument/stats'
 
 const sections = [
   { id: 'tools', icon: LayoutGrid, name: 'เครื่องมือพื้นฐาน', description: '' },
   { id: 'ear', icon: Ear, name: 'ฝึกหู', description: '' },
   { id: 'voice', icon: Mic, name: 'ฝึกร้องเพลง', description: '' },
-  { id: 'midi', icon: Piano, name: 'ฝึกเครื่องดนตรีและแกะเพลง', description: 'เชื่อมต่อเครื่องดนตรี MIDI และใช้เครื่องมือฝึกแกะเพลงจากไฟล์เสียง' },
+  { id: 'midi', icon: Piano, name: 'ฝึกเครื่องดนตรีและแกะเพลง', description: '' },
   { id: 'gpu', icon: Cpu, name: 'เชื่อมต่อ Local GPU', description: 'เชื่อมต่อ GPU ในเครื่องเพื่อแยกเสียงร้องและเครื่องดนตรี' },
 ] as const
 
@@ -187,7 +189,7 @@ function Practice({ practice }: { practice: ReturnType<typeof usePractice> }) {
         <span className="tool-icon purple"><Clock3 size={22} /></span>
         <div className="min-w-0">
           <h2 id="practice-title">เวลาซ้อม</h2>
-          <p>เริ่มนับอัตโนมัติเมื่อใช้เมโทรนอม จูนเนอร์ หรือร้องในรอบวอร์มเสียง</p>
+          <p>นับเวลาอัตโนมัติเมื่อใช้เมโทรนอม จูนเนอร์ หรือเริ่มรอบฝึกร้อง ฝึกเล่น และแกะเพลง</p>
         </div>
         <span className="local-tag ml-auto"><ShieldCheck size={15} />บันทึกในอุปกรณ์</span>
       </header>
@@ -231,9 +233,11 @@ export default function App() {
   const metronome = useMetronome()
   const tuner = useTuner()
   const [vocalActive, setVocalActive] = useState(false)
-  const practice = usePractice(metronome.running || tuner.state === 'listening' || vocalActive)
+  const [instrumentActive, setInstrumentActive] = useState(false)
+  const practice = usePractice(metronome.running || tuner.state === 'listening' || vocalActive || instrumentActive)
   const earStats = useEarStats()
   const vocalStats = useVocalStats()
+  const instrumentStats = useInstrumentStats()
   const active = sections.find(section => section.id === activeId) ?? sections[0]
 
   function navigate(id: Section) {
@@ -243,6 +247,7 @@ export default function App() {
       tuner.stop()
     }
     if (activeId === 'voice') setVocalActive(false)
+    if (activeId === 'midi') setInstrumentActive(false)
     setActiveId(id)
     window.scrollTo(0, 0)
   }
@@ -298,10 +303,12 @@ export default function App() {
           <Practice practice={practice} />
           <EarStats stats={earStats} open={() => navigate('ear')} />
           <VocalHistory stats={vocalStats} open={() => navigate('voice')} />
+          <InstrumentHistory stats={instrumentStats} open={() => navigate('midi')} />
         </div>
         {activeId === 'ear' && <EarTraining stats={earStats} />}
         {activeId === 'voice' && <VocalStudio stats={vocalStats} onActiveChange={setVocalActive} />}
-        {(activeId === 'midi' || activeId === 'gpu') && (
+        {activeId === 'midi' && <InstrumentStudio stats={instrumentStats} onActiveChange={setInstrumentActive} />}
+        {activeId === 'gpu' && (
           <section className="panel placeholder">
             <span className="tool-icon purple"><active.icon size={24} /></span>
             <h1>{active.name}</h1>

@@ -3,7 +3,7 @@ import { Activity, Clock3, Mic, Target } from 'lucide-react'
 import { noteLabel } from '../audio/pitch'
 import { warmups } from './music'
 import RangeTest, { RangeResult } from './RangeTest'
-import { formatDuration } from './stats'
+import { formatDuration } from '../usePractice'
 import type { VocalStats } from './stats'
 import WarmupSession from './WarmupSession'
 

@@ -1,5 +1,7 @@
 import { createPitchDetector } from './pitch'
 
+export const pitchSampleInterval = 0.05
+
 export const microphoneOptions: MediaTrackConstraints = {
   echoCancellation: true,
   noiseSuppression: true,

@@ -3,7 +3,7 @@ import { Check, Mic, RotateCcw, Square } from 'lucide-react'
 import { noteLabel } from '../audio/pitch'
 import { holdSeconds, nearestVoiceGroup, pitchLimits, trackHold, voiceGroups } from './music'
 import type { NoteHold, VocalRange } from './music'
-import { useVocalMic } from './useVocalMic'
+import { useMicrophonePitch } from '../audio/useMicrophonePitch'
 
 const emptyReading = { midi: null as number | null, hold: 0, best: null as number | null }
 
@@ -18,7 +18,7 @@ export function RangeResult({ range }: { range: VocalRange }) {
 }
 
 export default function RangeTest({ range, save }: { range: VocalRange | null; save: (range: VocalRange) => void }) {
-  const mic = useVocalMic()
+  const mic = useMicrophonePitch()
   const [stage, setStage] = useState<'low' | 'high'>('low')
   const [testing, setTesting] = useState(false)
   const [low, setLow] = useState<number | null>(null)
