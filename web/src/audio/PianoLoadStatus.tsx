@@ -1,8 +1,12 @@
 import { useEffect, useSyncExternalStore } from 'react'
 import { pianoAnchors, pianoRevision, pianoStatus, preloadPianoAnchors, subscribePiano } from './pianoEngine'
 
-export default function PianoLoadStatus({ notes, playingFallback = false }: { notes: readonly number[]; playingFallback?: boolean }) {
-  const key = pianoAnchors(notes).slice(0, 12).join(',')
+export default function PianoLoadStatus({ notes, playingFallback = false, anchorLimit = 12 }: {
+  notes: readonly number[]
+  playingFallback?: boolean
+  anchorLimit?: number
+}) {
+  const key = pianoAnchors(notes).slice(0, anchorLimit).join(',')
   const anchors = key ? key.split(',').map(Number) : []
   useSyncExternalStore(subscribePiano, pianoRevision, pianoRevision)
   useEffect(() => {

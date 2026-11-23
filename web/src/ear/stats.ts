@@ -136,7 +136,7 @@ export function useEarStats() {
     return () => window.removeEventListener('storage', sync)
   }, [])
 
-  function add(topic: Topic, correct: number, attempts: number, exercise?: ExerciseMetadata) {
+  function add(topic: Topic, correct: number, attempts: number, exercise?: ExerciseMetadata<AdvancedCategory>) {
     const key = `${storagePrefix}${dayKey(new Date())}:${writerId}`
     const bucket = recordsRef.current[key] ?? { ...emptyCounts(), bestStars: {} }
     const count = bucket[topic]
@@ -160,7 +160,7 @@ export function useEarStats() {
     add(topic, Number(correct), 1)
   }
 
-  function recordExercise(exercise: ExerciseMetadata, correct: number, attempts: number) {
+  function recordExercise(exercise: ExerciseMetadata<AdvancedCategory>, correct: number, attempts: number) {
     add(exercise.categoryId, correct, attempts, exercise)
   }
 
