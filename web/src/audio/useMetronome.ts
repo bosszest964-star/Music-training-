@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { playMetronomeClick } from './metronomeClick'
 
 export const meters = {
   '2/4': 2,
@@ -106,17 +107,8 @@ export function useMetronome() {
         while (nextPlayback.nextTime < now + 0.1) {
           const time = nextPlayback.nextTime
           const index = nextPlayback.nextIndex % meters[meter]
-          const oscillator = context.createOscillator()
-          const envelope = context.createGain()
           const secondary = meter === '6/8' && index === 3
-          oscillator.type = 'sine'
-          oscillator.frequency.value = index === 0 ? 1250 : secondary ? 1000 : 780
-          envelope.gain.setValueAtTime(0.001, time)
-          envelope.gain.exponentialRampToValueAtTime(index === 0 ? 0.9 : 0.55, time + 0.003)
-          envelope.gain.exponentialRampToValueAtTime(0.001, time + 0.06)
-          oscillator.connect(envelope).connect(bus)
-          oscillator.start(time)
-          oscillator.stop(time + 0.065)
+          playMetronomeClick(context, bus, time, index === 0 ? 'downbeat' : secondary ? 'secondary' : 'regular')
           nextPlayback.beats.push({ time, index })
           while (nextPlayback.beats[0]?.time < now - 1) nextPlayback.beats.shift()
           nextPlayback.nextTime += duration

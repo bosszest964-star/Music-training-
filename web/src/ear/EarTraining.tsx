@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { AudioLines, CheckCircle2, Ear, ListMusic, Play, RotateCcw, SlidersHorizontal, Square, XCircle } from 'lucide-react'
+import { AudioLines, CheckCircle2, Drum, Ear, Guitar, KeyboardMusic, ListMusic, Play, RotateCcw, SlidersHorizontal, Square, Star, Waves, XCircle } from 'lucide-react'
 import { createEarAudio } from './audio'
 import type { Voice } from '../audio/noteSynth'
 import PianoLoadStatus from '../audio/PianoLoadStatus'
@@ -9,12 +9,30 @@ import EarStats from './EarStats'
 import { makeQuestion } from './exercises'
 import type { Difficulty, HarmonyMode, PitchGame, Question } from './exercises'
 import type { EarStatsData } from './stats'
+import { advancedCategories } from './exerciseMetadata'
+import type { AdvancedCategory } from './exerciseMetadata'
+import ProgressionTrainer from './advanced/ProgressionTrainer'
+import MelodicEcho from './advanced/MelodicEcho'
+import RhythmTapTrainer from './advanced/RhythmTapTrainer'
+import IntonationTrainer from './advanced/IntonationTrainer'
 
 const games = {
   degree: { label: 'หน้าที่โน้ตในคีย์', description: 'ฟังคอร์ดนำแล้วหาว่าโน้ตอยู่ตำแหน่งไหน', icon: Ear },
   harmony: { label: 'ขั้นคู่เสียงและคอร์ด', description: 'ฟังระยะห่างของโน้ตและสีของคอร์ด', icon: ListMusic },
   eq: { label: 'ฝึกฟัง EQ', description: 'ฟังย่านเสียงผ่านลูปดนตรีหรือเพลงของคุณ', icon: SlidersHorizontal },
+  progression: { label: 'ทายทางเดินคอร์ด', description: 'ฟังคอร์ดในคีย์ที่สุ่มแล้วทายลำดับ', icon: Guitar },
+  echo: { label: advancedCategories.echo, description: 'จำเสียงที่ได้ยินแล้วกดตามบนลิ่มเปียโน', icon: KeyboardMusic },
+  rhythm: { label: advancedCategories.rhythm, description: 'ฝึกแตะตามแพตเทิร์นตั้งแต่ตัวดำถึงจังหวะขัด', icon: Drum },
+  intonation: { label: advancedCategories.intonation, description: 'เทียบเสียงสองตัวที่ต่างกัน 5–50 cents', icon: Waves },
 } as const
+
+type Game = keyof typeof games
+const groups: ReadonlyArray<{ id: string; label: string; games: readonly Game[] }> = [
+  { id: 'pitch', label: 'โน้ตและการเทียบเสียง', games: ['degree', 'harmony', 'intonation'] },
+  { id: 'music', label: 'ทำนองและทางคอร์ด', games: ['echo', 'progression'] },
+  { id: 'rhythm', label: 'จังหวะ', games: ['rhythm'] },
+  { id: 'eq', label: 'EQ', games: ['eq'] },
+]
 
 const difficulties: Record<Difficulty, string> = { beginner: 'เริ่มต้น (1, 3, 5)', diatonic: 'ครบ 7 โน้ต', chromatic: 'โครมาติก 12 โน้ต' }
 const harmonyModes: Record<HarmonyMode, string> = {
@@ -142,10 +160,12 @@ function Exercise({ game, voice, difficulty, mode, record }: {
 }
 
 export default function EarTraining({ stats }: { stats: EarStatsData }) {
-  const [game, setGame] = useState<keyof typeof games>('degree')
+  const [game, setGame] = useState<Game>('degree')
+  const tabButtons = useRef<(HTMLButtonElement | null)[]>([])
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner')
   const [mode, setMode] = useState<HarmonyMode>('mixed')
   const [voice, setVoice] = useState<Voice>('piano')
+  const group = groups.find(item => item.games.includes(game)) ?? groups[0]
   const settingsKey = `${game}:${difficulty}:${mode}`
 
   return (
@@ -153,35 +173,60 @@ export default function EarTraining({ stats }: { stats: EarStatsData }) {
       <section className="hero ear-hero">
         <div className="hero-copy">
           <h1>ฝึกหูและโสตทักษะ</h1>
-          <span>ฝึกฟังตำแหน่งโน้ต ขั้นคู่ คอร์ด และย่านความถี่</span>
+          <span>ฝึกฟังโน้ต ทำนอง ทางคอร์ด จังหวะ และย่านความถี่</span>
         </div>
         <div className="ear-hero-art" aria-hidden="true"><AudioLines /></div>
       </section>
 
-      <div className="ear-games" role="group" aria-label="เลือกแบบฝึกหู">
-        {(Object.keys(games) as (keyof typeof games)[]).map(id => {
-          const { label, description, icon: Icon } = games[id]
-          return (
-            <button key={id} className={`panel ear-game ear-${id}`} onClick={() => setGame(id)} aria-pressed={game === id}>
-              <span className="ear-game-icon"><Icon size={21} aria-hidden="true" /></span>
-              <span><strong>{label}</strong><small>{description}</small></span>
-            </button>
-          )
-        })}
+      <div className="ear-category-tabs" role="tablist" aria-label="หมวดฝึกหูและจังหวะ">
+        {groups.map((item, index) => (
+          <button key={item.id} type="button" className="subtle-button" role="tab"
+            id={`ear-tab-${item.id}`} aria-controls="ear-category-panel" aria-selected={item === group}
+            tabIndex={item === group ? 0 : -1} ref={element => { tabButtons.current[index] = element }}
+            onClick={() => { if (item !== group) setGame(item.games[0]) }}
+            onKeyDown={event => {
+              const next = event.key === 'ArrowRight' ? (index + 1) % groups.length :
+                event.key === 'ArrowLeft' ? (index + groups.length - 1) % groups.length :
+                  event.key === 'Home' ? 0 : event.key === 'End' ? groups.length - 1 : null
+              if (next === null) return
+              event.preventDefault()
+              setGame(groups[next].games[0])
+              tabButtons.current[next]?.focus()
+            }}>{item.label}</button>
+        ))}
       </div>
-
-      <section className={`panel ear-exercise ear-${game}`} aria-label={games[game].label}>
-        {game === 'eq' ? <MusicalEqTrainer record={stats.record} /> : (
-          <>
-            <div className="ear-settings">
-              {game === 'degree' && <EarOptions label="ระดับความยาก" options={difficulties} value={difficulty} onChange={setDifficulty} />}
-              {game === 'harmony' && <EarOptions label="รูปแบบโจทย์" options={harmonyModes} value={mode} onChange={setMode} />}
-              <EarOptions label="เสียงที่ใช้" options={voices} value={voice} onChange={setVoice} />
-            </div>
-            <Exercise key={settingsKey} game={game} voice={voice} difficulty={difficulty} mode={mode} record={stats.record} />
-          </>
-        )}
-      </section>
+      <div id="ear-category-panel" role="tabpanel" aria-labelledby={`ear-tab-${group.id}`}>
+        {group.games.length > 1 && <div className="ear-games ear-catalog" role="group" aria-label="เลือกแบบฝึกหู">
+          {group.games.map(id => {
+            const { label, description, icon: Icon } = games[id]
+            const stars = stats.starsByCategory[id as AdvancedCategory]
+            return (
+              <button key={id} type="button" className={`panel ear-game ear-${id}`} onClick={() => setGame(id)} aria-pressed={game === id}>
+                <span className="ear-game-icon"><Icon size={21} aria-hidden="true" /></span>
+                <span><strong>{label}</strong><small>{description}</small></span>
+                {stars > 0 && <span className="ear-card-stars" aria-label={`${stars} ดาว`}><Star size={14} fill="currentColor" />{stars}</span>}
+              </button>
+            )
+          })}
+        </div>}
+        <section className={`panel ear-exercise ear-${game}`} aria-label={games[game].label}>
+          {game === 'eq' && <MusicalEqTrainer record={stats.record} />}
+          {game === 'progression' && <ProgressionTrainer stats={stats} />}
+          {game === 'echo' && <MelodicEcho stats={stats} />}
+          {game === 'rhythm' && <RhythmTapTrainer stats={stats} />}
+          {game === 'intonation' && <IntonationTrainer stats={stats} />}
+          {(game === 'degree' || game === 'harmony') && (
+            <>
+              <div className="ear-settings">
+                {game === 'degree' && <EarOptions label="ระดับความยาก" options={difficulties} value={difficulty} onChange={setDifficulty} />}
+                {game === 'harmony' && <EarOptions label="รูปแบบโจทย์" options={harmonyModes} value={mode} onChange={setMode} />}
+                <EarOptions label="เสียงที่ใช้" options={voices} value={voice} onChange={setVoice} />
+              </div>
+              <Exercise key={settingsKey} game={game} voice={voice} difficulty={difficulty} mode={mode} record={stats.record} />
+            </>
+          )}
+        </section>
+      </div>
       <EarStats stats={stats} />
     </>
   )
