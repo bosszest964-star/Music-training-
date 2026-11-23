@@ -19,7 +19,7 @@
 
 .instrument-tabs, .instrument-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .instrument-tabs { margin: 15px 0 12px; }
-.instrument-tabs button[aria-pressed="true"], .instrument-toolbar button[aria-pressed="true"] {
+.instrument-tabs button[aria-selected="true"], .instrument-toolbar button[aria-pressed="true"] {
   border-color: #684f88; color: #e2cfff; background: #3a2c4d;
 }
 .instrument-panel { padding: clamp(13px, 2vw, 22px); }
@@ -131,7 +131,7 @@
 .instrument-history { margin-top: 16px; }
 .instrument-open { flex: none; margin-left: auto; }
 .instrument-metrics {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 12px 0;
 }
 .instrument-metrics > div { padding: 8px 10px; border: 1px solid #3e324d; border-radius: 9px; background: var(--inset); min-width: 0; }
 .instrument-metrics dt { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: .87rem; }
@@ -144,7 +144,7 @@
 .instrument-history-list li strong { overflow-wrap: anywhere; }
 .instrument-history-list time { display: block; }
 .instrument-history-list time, .instrument-history-list li > span { color: var(--muted); font-size: .83rem; }
-.instrument-history-list li > strong { color: #cbabf8; }
+.mastery-history-score { display: grid; justify-items: end; gap: 3px; color: #cbabf8; }
 .instrument-history > button { margin-top: 9px; }
 
 @media (max-width: 690px) {
@@ -158,6 +158,102 @@
   .instrument-open { margin-left: 53px; }
   .instrument-history-list li { grid-template-columns: 1fr auto; }
   .instrument-history-list li > span { grid-row: 2; }
-  .instrument-history-list li > strong { grid-column: 2; grid-row: 1 / 3; }
+  .mastery-history-score { grid-column: 2; grid-row: 1 / 3; }
   .instrument-metrics dt svg { display: none; }
+}
+
+.instrument-tabs button, .mastery-groups button, .mastery-note-options button { min-height: 44px; }
+.instrument-tabs button { white-space: nowrap; touch-action: manipulation; }
+.mastery-stars { display: inline-flex; gap: 3px; color: #a394b3; }
+.mastery-stars .earned { fill: #f7d384; color: #f7d384; }
+.mastery-result { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 15px; }
+.mastery-hand-key { display: flex; align-items: center; gap: 6px; }
+.mastery-hand-key i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; background: #75c9be; }
+.mastery-hand-key i:nth-of-type(2) { margin-left: 9px; background: #ae8beb; }
+
+.mastery-tempo { flex: 1; min-width: min(180px, 100%); gap: 1px; align-self: end; }
+.mastery-tempo strong { font-variant-numeric: tabular-nums; }
+.mastery-tempo input { width: 100%; min-height: 30px; }
+.mastery-chord-loop { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.mastery-chord-slot {
+  display: grid; gap: 3px; padding: 7px 9px; min-width: 0;
+  color: var(--muted); background: var(--inset); border: 1px solid #433651; border-radius: 9px;
+}
+.mastery-chord-slot[data-active] { color: #b8f2d9; background: #283e3a; border-color: #71bca7; }
+.mastery-chord-slot select {
+  min-width: 0; min-height: 44px; padding: 4px 6px; border-radius: 6px; border: 1px solid #58466d;
+  color: var(--text); background: #221a30; font-size: 1.06rem; font-weight: 800;
+}
+.mastery-chord-slot select:disabled { color: var(--text); opacity: 1; border-color: transparent; }
+.mastery-stroke-head, .mastery-quiz-banner {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px;
+  margin: 16px 0 7px;
+}
+.mastery-stroke-head span, .mastery-quiz-banner span { color: var(--muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
+.mastery-strum-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+.mastery-stroke-beat { flex: 1 0 min-content; }
+.mastery-stroke-beat > span { display: block; margin-left: 3px; padding: 0 4px 3px; color: var(--muted); font-size: .86rem; }
+.mastery-stroke-beat > div { display: flex; gap: 3px; border-radius: 8px; padding: 4px; background: #181624; }
+.mastery-stroke-beat > div > span {
+  position: relative; flex: 1; display: grid; place-items: center; min-width: 27px; min-height: 43px;
+  border: 1px solid #473859; border-radius: 6px; color: #d6c7ed; background: #2b233a; font-size: 1.24rem; font-weight: 800;
+}
+.mastery-stroke-beat small { position: absolute; top: 1px; right: 3px; color: inherit; line-height: 1; }
+.mastery-stroke-beat [data-accent] { color: #ffda9a; border-color: #7e6447; }
+.mastery-stroke-beat [data-current] { color: #211631; background: #d4b5ff; border-color: #e5ccff; }
+.mastery-stroke-beat [data-accent][data-current] { color: #362218; background: #f4ce8d; border-color: #ffe0a8; }
+
+.mastery-quiz-banner {
+  padding: 10px 12px; border-radius: 9px; border: 1px solid #493a5d; background: #2c223c; color: #e8d7fd;
+}
+.mastery-neck-scroller {
+  overflow-x: auto; border-radius: 10px; background: #201a2b; border: 1px solid #584663;
+}
+.mastery-neck { min-width: calc(70px + var(--frets) * 52px); }
+.mastery-neck-row { display: grid; grid-template-columns: 70px repeat(var(--frets), minmax(0, 1fr)); }
+.mastery-neck-row[data-target-string] { background: #4c385d; }
+.mastery-neck-numbers {
+  min-height: 30px; align-items: center; text-align: center; color: #c3afda; background: #2e2440; font-size: .84rem;
+}
+.mastery-neck-numbers span[data-dot]::after { content: ' ·'; color: #e7b978; }
+.mastery-string-tuning {
+  position: sticky; z-index: 1; left: 0; display: grid; place-items: center;
+  background: #352943; color: #e3d2f1; border-top: 1px solid #604e70; font-weight: 700; font-size: .9rem;
+}
+.mastery-fret {
+  position: relative; display: grid; place-items: center; min-width: 44px; min-height: 46px; touch-action: manipulation;
+  border-right: 1px solid #74617f; border-top: 1px solid #473853; color: #c9add8; font-weight: 800;
+}
+.mastery-fret:disabled { cursor: default; opacity: 1; }
+.mastery-fret::before { content: ''; position: absolute; inset: 50% 0 auto; height: 1px; background: #85728f; }
+.mastery-fret[data-open] { border-right: 3px solid #a890b6; background: #261f32; }
+.mastery-fret span {
+  position: relative; min-width: 30px; height: 30px; padding-inline: 3px; display: grid; place-items: center;
+  border-radius: 18px; background: #2c213b;
+}
+.mastery-fret[data-scale] span { color: #eee0ff; background: #594473; }
+.mastery-fret[data-root] span, .mastery-fret[data-answer] span { color: #163831; background: #8fe0c7; }
+.mastery-fret[data-marked] span, .mastery-fret[data-played]:not([data-answer]) span { color: #342214; background: #f2cd92; }
+.mastery-fret:focus-visible { outline-offset: -3px; }
+
+.mastery-note-options { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.mastery-note-options button { flex: 0 0 auto; min-width: 48px; justify-content: center; }
+.mastery-feedback {
+  min-height: 1.6rem; margin-top: 8px; color: #ffd296; font-size: .92rem;
+}
+.mastery-feedback[data-correct="true"] { color: #a9ecd1; }
+.mastery-score-sheet {
+  display: grid; place-items: center; background: #191626; border: 1px solid #453853; border-radius: 11px; overflow: hidden;
+}
+.mastery-score-sheet svg { display: block; width: min(100%, 510px); }
+.mastery-reading-keys { margin-top: 7px; }
+
+@media (max-width: 760px) {
+  .instrument-tabs { flex-wrap: nowrap; overflow-x: auto; padding: 3px; margin-inline: -3px; scrollbar-width: thin; }
+  .instrument-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 440px) {
+  .instrument-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mastery-chord-loop { gap: 4px; }
+  .mastery-chord-slot { padding-inline: 5px; }
 }

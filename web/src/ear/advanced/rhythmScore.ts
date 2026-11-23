@@ -47,11 +47,4 @@ export function eventTime(timestamp: number, now: number, origin: number) {
   return Number.isFinite(value) && value > 0 && value <= now + 1 && now - value <= 2000 ? value : now
 }
 
-export function audibleTime(
-  now: number, event: number, contextTime: number, latency: number, output?: AudioTimestamp,
-) {
-  if (output?.performanceTime && Number.isFinite(output.contextTime)) {
-    return (output.contextTime ?? 0) + (event - output.performanceTime) / 1000
-  }
-  return contextTime + (event - now) / 1000 - Math.max(0, latency)
-}
+export { audibleTime } from '../../audio/audioClock'

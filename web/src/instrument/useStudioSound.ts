@@ -30,6 +30,7 @@ export function useStudioSound() {
       active = session.current
       if (active.context.state !== 'running') await active.context.resume()
       if (session.current !== active) return null
+      if (active.context.state !== 'running') throw new Error('Audio context is not running')
       setError('')
       return active
     } catch {
@@ -50,12 +51,12 @@ export function useStudioSound() {
     })
   }
 
-  async function piano(midi: number, velocity: number) {
+  async function piano(midi: number, velocity: number, duration?: number) {
     const active = await ready()
     if (!active) return undefined
     try {
       const { context, output } = active
-      return playPiano(context, output, { midi, time: context.currentTime + 0.018, level: 0.31, velocity })
+      return playPiano(context, output, { midi, time: context.currentTime + 0.018, level: 0.31, velocity, duration })
     } catch {
       setError('เล่นเสียงเปียโนไม่ได้ ลองแตะอีกครั้ง')
       return undefined
