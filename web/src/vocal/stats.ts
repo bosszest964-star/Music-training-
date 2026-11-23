@@ -1,20 +1,32 @@
-import { useEffect, useState } from 'react'
-import { bpmLimits, pitchLimits, warmups } from './music'
-import type { VocalRange, WarmupId } from './music'
+import { useEffect, useMemo, useState } from 'react'
+import { gradeStars } from '../exerciseMetadata'
+import { bpmLimits, pitchLimits } from './music'
+import type { VocalRange } from './music'
+import { vocalExerciseById } from './catalog'
 
 const rangeKey = 'music-training.vocal.range.v1'
 const roundPrefix = 'music-training.vocal.round.v1:'
 
-export interface VocalRound {
-  id: string
-  finishedAt: number
-  exercise: WarmupId
+interface PracticeResult {
+  exercise: string
+  duration: number
+}
+
+interface PitchedResult extends PracticeResult {
+  kind: 'pitch'
   root: number
   bpm: number
   accuracy: number
   coverage: number
-  duration: number
+  combo?: number
 }
+
+type VocalResult = (PracticeResult & { kind: 'breath' }) | PitchedResult
+type VocalRound = VocalResult & { id: string; finishedAt: number }
+
+const legacyIds: ReadonlyMap<string, string> = new Map(
+  ['scale', 'arpeggio', 'siren', 'hold'].map(id => [id, `vocal-warmup-${id}`]),
+)
 
 function validNote(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= pitchLimits.low && value <= pitchLimits.high
@@ -33,12 +45,16 @@ function parseRound(raw: string | null, id: string): VocalRound | null {
   try {
     const data = JSON.parse(raw ?? 'null')
     const percent = (value: number) => Number.isInteger(value) && value >= 0 && value <= 100
-    if (!data || !Object.hasOwn(warmups, data.exercise) || !validNote(data.root)
-      || !percent(data.accuracy) || !percent(data.coverage) || data.coverage < data.accuracy
-      || !Number.isFinite(data.finishedAt) || data.finishedAt <= 0 || data.finishedAt > 8.64e15
-      || !Number.isInteger(data.bpm) || data.bpm < bpmLimits.min || data.bpm > bpmLimits.max
-      || !Number.isFinite(data.duration) || data.duration <= 0 || data.duration > 30) return null
-    return { ...data, id }
+    const exercise = vocalExerciseById.get(legacyIds.get(data?.exercise) ?? data?.exercise)
+    if (!exercise || !Number.isFinite(data.finishedAt) || data.finishedAt <= 0 || data.finishedAt > 8.64e15
+      || !Number.isFinite(data.duration) || data.duration <= 0 || data.duration > 180) return null
+    const common = { id, finishedAt: data.finishedAt, exercise: exercise.id, duration: data.duration }
+    if (exercise.categoryId === 'vocal-breath') return { ...common, kind: 'breath' }
+    if (!validNote(data.root) || !percent(data.accuracy) || !percent(data.coverage) || data.coverage < data.accuracy
+      || !Number.isInteger(data.bpm) || data.bpm < bpmLimits.min || data.bpm > bpmLimits.max) return null
+    const combo = exercise.categoryId === 'vocal-flyer' && Number.isInteger(data.combo) && data.combo >= 0
+      && data.combo <= exercise.route.length ? data.combo : undefined
+    return { ...common, kind: 'pitch', root: data.root, bpm: data.bpm, accuracy: data.accuracy, coverage: data.coverage, combo }
   } catch {
     return null
   }
@@ -104,14 +120,31 @@ export function useVocalStats() {
     persist(rangeKey, next)
   }
 
-  function saveRound(result: Omit<VocalRound, 'id' | 'finishedAt'>) {
+  function saveRound(result: VocalResult) {
     const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`
     const round = { ...result, id, finishedAt: Date.now() }
     setRounds(previous => sorted([...previous, round]))
     persist(roundPrefix + id, round)
   }
 
-  return { range, rounds, storageError, saveRange, saveRound }
+  const summary = useMemo(() => {
+    const bestStars = new Map<string, number>()
+    let practiceTime = 0
+    for (const round of rounds) {
+      practiceTime += round.duration
+      if (round.kind !== 'pitch') continue
+      const max = vocalExerciseById.get(round.exercise)?.maxStars ?? 0
+      const stars = gradeStars(round.accuracy, 100, max)
+      bestStars.set(round.exercise, Math.max(stars, bestStars.get(round.exercise) ?? 0))
+    }
+    return {
+      practiceTime,
+      stars: [...bestStars.values()].reduce((sum, stars) => sum + stars, 0),
+      latestPitch: rounds.find(round => round.kind === 'pitch'),
+    }
+  }, [rounds])
+
+  return { range, rounds, summary, storageError, saveRange, saveRound }
 }
 
 export type VocalStats = ReturnType<typeof useVocalStats>

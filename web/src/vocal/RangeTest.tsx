@@ -80,7 +80,7 @@ export default function RangeTest({ range, save }: { range: VocalRange | null; s
       {range && !testing ? (
         <>
           <RangeResult range={range} />
-          <p className="vocal-help">แบบฝึกวอร์มเสียงจะใช้ช่วงนี้ช่วยเลือกคีย์เริ่มต้น กลุ่มเสียงเป็นเพียงการเทียบช่วงโน้ต</p>
+          <p className="vocal-help">วอร์มเสียง ร้องทำนอง และเกมร้องเก็บดาวจะใช้ช่วงนี้ช่วยเลือกคีย์เริ่มต้น กลุ่มเสียงเป็นเพียงการเทียบช่วงโน้ต</p>
           <button className="subtle-button" onClick={() => setTesting(true)}><RotateCcw size={17} />ทดสอบใหม่</button>
         </>
       ) : (

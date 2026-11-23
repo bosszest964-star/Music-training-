@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react'
 import type { RefObject } from 'react'
 import { noteLabel } from '../audio/pitch'
-import { targetAt, tolerance, warmups } from './music'
-import type { PitchPoint, WarmupPlan } from './music'
+import { targetAt, tolerance } from './music'
+import type { PitchPoint, VocalPlan } from './music'
 
 export interface PitchTrace {
-  plan: WarmupPlan
+  plan: VocalPlan
   elapsed: number
   points: PitchPoint[]
 }
@@ -14,14 +14,14 @@ function drawPitch(
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
-  plan: WarmupPlan,
+  plan: VocalPlan,
   trace: PitchTrace | null,
 ) {
   const axis = 43
   const top = 20
   const bottom = height - 30
-  const high = plan.root + Math.max(5, warmups[plan.id].span + 2)
-  const low = plan.root - (plan.id === 'hold' ? 5 : 2)
+  const high = plan.root + Math.max(5, plan.span + 2)
+  const low = plan.root - (plan.span === 0 ? 5 : 2)
   const playhead = axis + (width - axis) * 0.31
   const elapsed = trace?.elapsed ?? 0
   const pixelsPerSecond = (width - axis) / Math.min(9, Math.max(4.5, 10 * plan.beat))
@@ -56,7 +56,10 @@ function drawPitch(
     context.fillStyle = '#373048'
     context.fillRect(marker, top, 1, bottom - top)
     context.fillStyle = '#a99ebd'
-    if (time < plan.duration - 0.001) context.fillText(String(beat + 1), marker + 4, height - 13)
+    if (time < plan.duration - 0.001) {
+      const label = plan.backing.length ? `${Math.floor(beat / plan.beatsPerBar) + 1}.${beat % plan.beatsPerBar + 1}` : String(beat + 1)
+      context.fillText(label, marker + 4, height - 13)
+    }
   }
 
   context.lineCap = 'round'
@@ -105,7 +108,7 @@ function drawPitch(
 }
 
 export default function PitchGraph({ plan, trace, moving }: {
-  plan: WarmupPlan
+  plan: VocalPlan
   trace: RefObject<PitchTrace | null>
   moving: boolean
 }) {
