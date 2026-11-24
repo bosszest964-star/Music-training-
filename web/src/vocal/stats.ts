@@ -4,8 +4,8 @@ import { bpmLimits, pitchLimits } from './music'
 import type { VocalRange } from './music'
 import { vocalExerciseById } from './catalog'
 
-const rangeKey = 'music-training.vocal.range.v1'
-const roundPrefix = 'music-training.vocal.round.v1:'
+export const vocalRangeKey = 'music-training.vocal.range.v1'
+export const vocalRoundPrefix = 'music-training.vocal.round.v1:'
 
 interface PracticeResult {
   exercise: string
@@ -32,7 +32,7 @@ function validNote(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= pitchLimits.low && value <= pitchLimits.high
 }
 
-function parseRange(raw: string | null): VocalRange | null {
+export function parseVocalRange(raw: string | null): VocalRange | null {
   try {
     const data = JSON.parse(raw ?? 'null')
     return validNote(data?.low) && validNote(data?.high) && data.low <= data.high ? { low: data.low, high: data.high } : null
@@ -41,7 +41,7 @@ function parseRange(raw: string | null): VocalRange | null {
   }
 }
 
-function parseRound(raw: string | null, id: string): VocalRound | null {
+export function parseVocalRound(raw: string | null, id: string): VocalRound | null {
   try {
     const data = JSON.parse(raw ?? 'null')
     const percent = (value: number) => Number.isInteger(value) && value >= 0 && value <= 100
@@ -64,11 +64,11 @@ function loadStats() {
   try {
     const rounds: VocalRound[] = []
     for (const key of Object.keys(localStorage)) {
-      if (!key.startsWith(roundPrefix)) continue
-      const round = parseRound(localStorage.getItem(key), key.slice(roundPrefix.length))
+      if (!key.startsWith(vocalRoundPrefix)) continue
+      const round = parseVocalRound(localStorage.getItem(key), key.slice(vocalRoundPrefix.length))
       if (round) rounds.push(round)
     }
-    return { range: parseRange(localStorage.getItem(rangeKey)), rounds: sorted(rounds), storageError: false }
+    return { range: parseVocalRange(localStorage.getItem(vocalRangeKey)), rounds: sorted(rounds), storageError: false }
   } catch {
     return { range: null, rounds: [], storageError: true }
   }
@@ -91,11 +91,11 @@ export function useVocalStats() {
         const data = loadStats()
         setRange(data.range)
         setRounds(data.rounds)
-      } else if (event.key === rangeKey) {
-        setRange(parseRange(event.newValue))
-      } else if (event.key.startsWith(roundPrefix)) {
-        const id = event.key.slice(roundPrefix.length)
-        const round = parseRound(event.newValue, id)
+      } else if (event.key === vocalRangeKey) {
+        setRange(parseVocalRange(event.newValue))
+      } else if (event.key.startsWith(vocalRoundPrefix)) {
+        const id = event.key.slice(vocalRoundPrefix.length)
+        const round = parseVocalRound(event.newValue, id)
         setRounds(previous => {
           const next = previous.filter(entry => entry.id !== id)
           if (round) next.push(round)
@@ -117,14 +117,14 @@ export function useVocalStats() {
 
   function saveRange(next: VocalRange) {
     setRange(next)
-    persist(rangeKey, next)
+    persist(vocalRangeKey, next)
   }
 
   function saveRound(result: VocalResult) {
     const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`
     const round = { ...result, id, finishedAt: Date.now() }
     setRounds(previous => sorted([...previous, round]))
-    persist(roundPrefix + id, round)
+    persist(vocalRoundPrefix + id, round)
   }
 
   const summary = useMemo(() => {

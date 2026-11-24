@@ -8,9 +8,9 @@ import type { IntonationStage, PitchChoice } from './intonation'
 import { ListenButton, RoundGrade } from './TrainingControls'
 import { usePhrase } from './usePhrase'
 
-export default function IntonationTrainer({ stats }: { stats: EarStatsData }) {
-  const [stage, setStage] = useState(intonationStages[0])
-  const [round, setRound] = useState(() => intonationQuestion(intonationStages[0]))
+export default function IntonationTrainer({ stats, preset }: { stats: EarStatsData; preset?: IntonationStage }) {
+  const [stage, setStage] = useState(preset ?? intonationStages[0])
+  const [round, setRound] = useState(() => intonationQuestion(preset ?? intonationStages[0]))
   const [heard, setHeard] = useState(false)
   const [answer, setAnswer] = useState<PitchChoice | null>(null)
   const answered = useRef(false)
@@ -36,7 +36,7 @@ export default function IntonationTrainer({ stats }: { stats: EarStatsData }) {
     <div className="advanced-body">
       <div className="advanced-heading"><div><h2>จับเสียงเพี้ยน</h2>
         <p>ฟังสองเสียงเทียบกัน แล้วบอกว่าเสียงที่สองสูงขึ้น ต่ำลง หรือตรงกับเสียงแรก</p></div>
-        <label className="eq-source"><span>ระดับความต่าง</span><span className="eq-select">
+        {!preset && <label className="eq-source"><span>ระดับความต่าง</span><span className="eq-select">
           <select value={stage.id} onChange={event => {
             const next = intonationStages.find(item => item.id === event.target.value)
             if (next) reset(next)
@@ -45,7 +45,7 @@ export default function IntonationTrainer({ stats }: { stats: EarStatsData }) {
               {difficultyNames[item.difficulty]} · {item.cents} cents
             </option>)}
           </select><ChevronDown size={16} /></span>
-        </label>
+        </label>}
       </div>
       <PianoLoadStatus notes={[round.midi]} />
       <div className="advanced-transport">

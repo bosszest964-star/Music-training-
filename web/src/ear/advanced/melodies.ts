@@ -39,6 +39,11 @@ export type Melody = typeof melodies[number]
 
 export function melodyQuestion(difficulty: ExerciseDifficulty, previous?: Melody) {
   const [exercise] = sampleDistinct(melodies.filter(item => item.difficulty === difficulty && item !== previous), 1)
+  return melodyForExercise(exercise)
+}
+
+export function melodyForExercise(exercise: Melody) {
+  const { difficulty } = exercise
   const low = 60 - Math.min(...exercise.steps)
   const high = 83 - Math.max(...exercise.steps)
   const [root] = sampleDistinct(Array.from({ length: high - low + 1 }, (_, index) => low + index), 1)

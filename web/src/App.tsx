@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
-  Activity, AudioLines, ChevronDown, ChevronRight, Clock3, Cpu, Ear,
-  Gauge, Hand, Headphones, LayoutGrid, Mic, MicOff, Minus, Music2, Pause, Piano,
-  Play, Plus, ShieldCheck, Timer,
+  Activity, AudioLines, Award, ChevronDown, ChevronRight, Clock3, Cpu, Dices, Ear,
+  Gauge, Hand, Headphones, LayoutGrid, Map, Mic, MicOff, Minus, Music2, Pause, Piano,
+  Play, Plus, Settings2, ShieldCheck, Timer,
 } from 'lucide-react'
 import { meters, useMetronome } from './audio/useMetronome'
 import type { Meter } from './audio/useMetronome'
@@ -18,7 +18,18 @@ import VocalStudio, { VocalHistory } from './vocal/VocalStudio'
 import { useVocalStats } from './vocal/stats'
 import InstrumentStudio, { InstrumentHistory } from './instrument/InstrumentStudio'
 import { useInstrumentStats } from './instrument/stats'
-import StemStudio from './stems/StemStudio'
+import { DailyCard } from './journey/DailyCard'
+import { dailyPlan } from './journey/campaign'
+import type { Track } from './journey/campaign'
+import type { Workout } from './journey/DailyWorkout'
+import { useJourney } from './journey/progress'
+
+const StemStudio = lazy(() => import('./stems/StemStudio'))
+const CampaignPage = lazy(() => import('./journey/CampaignPage'))
+const GeneratorPage = lazy(() => import('./journey/GeneratorPage'))
+const DailyWorkout = lazy(() => import('./journey/DailyWorkout'))
+const MusicianProfile = lazy(() => import('./journey/Profiles').then(module => ({ default: module.MusicianProfile })))
+const ProgressSettings = lazy(() => import('./journey/Profiles').then(module => ({ default: module.ProgressSettings })))
 
 const sections = [
   { id: 'tools', icon: LayoutGrid, name: 'เครื่องมือพื้นฐาน' },
@@ -26,9 +37,13 @@ const sections = [
   { id: 'voice', icon: Mic, name: 'ฝึกร้องเพลง' },
   { id: 'midi', icon: Piano, name: 'ฝึกเครื่องดนตรีและแกะเพลง' },
   { id: 'gpu', icon: Cpu, name: 'แยกไลน์ดนตรี' },
+  { id: 'campaign', icon: Map, name: 'แผนที่ 50 ด่าน' },
+  { id: 'generator', icon: Dices, name: 'สุ่มโจทย์ไม่จำกัด' },
+  { id: 'profile', icon: Award, name: 'โปรไฟล์นักดนตรี' },
+  { id: 'settings', icon: Settings2, name: 'ตั้งค่า' },
 ] as const
 
-type Section = typeof sections[number]['id']
+type Section = typeof sections[number]['id'] | 'daily'
 const bars = [8, 10, 14, 11, 20, 16, 28, 43, 32, 48, 66, 44, 74, 104, 77, 56, 86, 123, 96, 69, 48, 63, 39, 26, 34, 20, 15, 22, 12, 9, 12]
 const tempoRange = { min: 30, max: 240 }
 const weekday = new Intl.DateTimeFormat('th-TH', { weekday: 'short' })
@@ -236,11 +251,18 @@ export default function App() {
   const [vocalActive, setVocalActive] = useState(false)
   const [instrumentActive, setInstrumentActive] = useState(false)
   const [stemsActive, setStemsActive] = useState(false)
-  const practice = usePractice(metronome.running || tuner.state === 'listening' || vocalActive || instrumentActive || stemsActive)
-  const earStats = useEarStats()
+  const [journeyActive, setJourneyActive] = useState(false)
+  const [workout, setWorkout] = useState<Workout | null>(null)
+  const progress = useJourney()
+  const practice = usePractice(metronome.running || tuner.state === 'listening' || vocalActive || instrumentActive || stemsActive || journeyActive)
+  const earStats = useEarStats(progress.earAnswer)
   const vocalStats = useVocalStats()
   const instrumentStats = useInstrumentStats()
-  const active = sections.find(section => section.id === activeId) ?? sections[0]
+  const active = sections.find(section => section.id === activeId)
+  const totalStars = earStats.totalStars + vocalStats.summary.stars + instrumentStats.totals.stars
+    + Object.values(progress.stars).reduce((sum, value) => sum + value, 0)
+  const milliseconds = Object.values(practice.totals).reduce((sum, value) => sum + value, 0)
+  const journeySources = { ear: earStats, vocal: vocalStats, instrument: instrumentStats.save }
 
   function navigate(id: Section) {
     if (id === activeId) return
@@ -251,8 +273,14 @@ export default function App() {
     if (activeId === 'voice') setVocalActive(false)
     if (activeId === 'midi') setInstrumentActive(false)
     if (activeId === 'gpu') setStemsActive(false)
+    if (activeId === 'campaign' || activeId === 'generator' || activeId === 'daily') setJourneyActive(false)
     setActiveId(id)
     window.scrollTo(0, 0)
+  }
+
+  function startDaily(track: Track) {
+    setWorkout({ track, plan: dailyPlan(track, dayKey(new Date()), progress.stars) })
+    navigate('daily')
   }
 
   return (
@@ -280,7 +308,7 @@ export default function App() {
 
       <main className="main">
         <div className="topbar">
-          <div className="breadcrumb"><Music2 size={16} /><span>ห้องซ้อม</span><ChevronRight size={14} /><strong>{active.name}</strong></div>
+          <div className="breadcrumb"><Music2 size={16} /><span>ห้องซ้อม</span><ChevronRight size={14} /><strong>{active?.name ?? 'ซ้อมรายวัน'}</strong></div>
           <span className="free-tag"><i />ใช้งานฟรี</span>
         </div>
 
@@ -298,6 +326,8 @@ export default function App() {
               </div>
             </div>
           </section>
+          <DailyCard daily={progress.daily} today={practice.today} onStart={startDaily}
+            openMap={() => navigate('campaign')} openGenerator={() => navigate('generator')} openProfile={() => navigate('profile')} />
           <div className="section-label"><Gauge size={19} /><h2>เครื่องมือฝึกซ้อม</h2></div>
           <div className="tool-grid">
             <Metronome metronome={metronome} />
@@ -311,7 +341,16 @@ export default function App() {
         {activeId === 'ear' && <EarTraining stats={earStats} />}
         {activeId === 'voice' && <VocalStudio stats={vocalStats} onActiveChange={setVocalActive} />}
         {activeId === 'midi' && <InstrumentStudio stats={instrumentStats} onActiveChange={setInstrumentActive} />}
-        {activeId === 'gpu' && <StemStudio onActiveChange={setStemsActive} />}
+        <Suspense fallback={<p className="panel journey-panel" role="status">กำลังเปิดเครื่องมือ…</p>}>
+          {activeId === 'gpu' && <StemStudio onActiveChange={setStemsActive} />}
+          {activeId === 'campaign' && <CampaignPage progress={progress} sources={journeySources} onActiveChange={setJourneyActive} />}
+          {activeId === 'generator' && <GeneratorPage sources={journeySources} onActiveChange={setJourneyActive} recordGeneration={progress.recordGeneration} />}
+          {activeId === 'daily' && workout && <DailyWorkout workout={workout} sources={journeySources} onActiveChange={setJourneyActive}
+            onFinish={progress.finishDaily} back={() => navigate('tools')} />}
+          {activeId === 'profile' && <MusicianProfile progress={progress} stars={totalStars}
+            milliseconds={milliseconds} openSettings={() => navigate('settings')} />}
+          {activeId === 'settings' && <ProgressSettings />}
+        </Suspense>
         <footer className="app-credits">
           <a href="https://github.com/Tonejs/audio/tree/master/salamander">Salamander Grand Piano</a>
           {' โดย Alexander Holm · '}

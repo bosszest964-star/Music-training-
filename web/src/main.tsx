@@ -12,6 +12,7 @@ import './ear/ear.css'
 import './vocal/vocal.css'
 import './instrument/instrument.css'
 import './stems/stems.css'
+import './journey/journey.css'
 
 function Root() {
   const [dismissed, setDismissed] = useState(false)

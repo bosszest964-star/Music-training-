@@ -28,10 +28,11 @@ function dispose(session: Session | null) {
   window.clearTimeout(session.feedbackTimer)
 }
 
-export function useNoteQuiz<Question>({ next, timed, maxStars, onActiveChange, onFinish }: {
+export function useNoteQuiz<Question>({ next, timed, maxStars, onActiveChange, onFinish, questionLimit }: {
   next: (previous: Question | null) => Question
   timed: boolean
   maxStars: number
+  questionLimit?: number
   onActiveChange: (active: boolean) => void
   onFinish: (result: NoteQuizScore) => void
 }) {
@@ -74,7 +75,7 @@ export function useNoteQuiz<Question>({ next, timed, maxStars, onActiveChange, o
     const { correct, attempts } = session
     const result = {
       duration, correct, attempts, accuracy: attempts ? Math.round(100 * correct / attempts) : 0,
-      stars: gradeStars(correct, timed ? Math.max(5, attempts) : attempts, maxStars),
+      stars: gradeStars(correct, timed ? Math.max(5, attempts) : Math.max(questionLimit ?? 0, attempts), maxStars),
     }
     setActive(false)
     setFeedback(null)
@@ -126,6 +127,10 @@ export function useNoteQuiz<Question>({ next, timed, maxStars, onActiveChange, o
       if (current.current !== session) return
       if (performance.now() >= session.deadline) {
         setRemaining(0)
+        finish()
+        return
+      }
+      if (questionLimit && session.attempts >= questionLimit) {
         finish()
         return
       }

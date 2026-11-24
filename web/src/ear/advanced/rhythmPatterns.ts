@@ -39,4 +39,8 @@ export const rhythmPatterns = [
   ]),
 ]
 
-export type RhythmPattern = typeof rhythmPatterns[number]
+export type RhythmPattern = typeof rhythmPatterns[number] & { meter?: '2/4' | '3/4' | '4/4' | '6/8' }
+export function barPulses(pattern: RhythmPattern) {
+  const meter = pattern.meter ?? '4/4'
+  return meter === '6/8' ? 2 : Number(meter[0])
+}

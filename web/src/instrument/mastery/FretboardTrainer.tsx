@@ -12,10 +12,13 @@ import { challengeSeconds, useNoteQuiz } from './useNoteQuiz'
 
 const modes = { explore: 'ดูโน้ตและสเกล', find: 'แตะหาโน้ต', name: 'ทายชื่อโน้ต' } as const
 
-export default function FretboardTrainer({ save, onActiveChange }: { save: SaveRound; onActiveChange: (active: boolean) => void }) {
-  const [instrument, setInstrument] = useState<FretInstrument>('guitar')
-  const [mode, setMode] = useState<keyof typeof modes>('explore')
-  const [region, setRegion] = useState<keyof typeof fretRegions>('first')
+export default function FretboardTrainer({ save, onActiveChange, preset }: {
+  save: SaveRound; onActiveChange: (active: boolean) => void
+  preset?: { instrument: FretInstrument; mode: 'find' | 'name'; region: keyof typeof fretRegions }
+}) {
+  const [instrument, setInstrument] = useState<FretInstrument>(preset?.instrument ?? 'guitar')
+  const [mode, setMode] = useState<keyof typeof modes>(preset?.mode ?? 'explore')
+  const [region, setRegion] = useState<keyof typeof fretRegions>(preset?.region ?? 'first')
   const [scale, setScale] = useState<keyof typeof scales>('chromatic')
   const [root, setRoot] = useState(0)
   const [played, setPlayed] = useState<FretPosition | null>(null)
@@ -27,7 +30,7 @@ export default function FretboardTrainer({ save, onActiveChange }: { save: SaveR
     next: previous => fretQuestion(rows, mode === 'name' ? 'name' : 'find', previous),
     timed: true, maxStars: exercise.maxStars, onActiveChange,
     onFinish: result => save({ activity: 'fretboard', label: `${modes[mode]} · ${label}`,
-      accuracy: result.accuracy, duration: result.duration, stars: result.stars, exerciseId: exercise.id }),
+      accuracy: result.accuracy, attempts: result.attempts, duration: result.duration, stars: result.stars, exerciseId: exercise.id }),
   })
   const question = quiz.question
   const neck = useRef<HTMLDivElement>(null)
@@ -68,6 +71,7 @@ export default function FretboardTrainer({ save, onActiveChange }: { save: SaveR
         <span className="tool-icon purple"><Guitar size={22} /></span>
         <div><h2 id="fretboard-title">จำโน้ตบนคอเครื่องดนตรี</h2><p>สำรวจตำแหน่งโน้ต หรือเล่นโจทย์แข่งกับเวลา</p></div>
       </header>
+      {!preset && <>
       <div className="instrument-toolbar" role="group" aria-label="โหมดฝึกบนคอ">
         {Object.entries(modes).map(([id, title]) => <button key={id} className="subtle-button" aria-pressed={mode === id}
           disabled={quiz.active} onClick={() => {
@@ -101,6 +105,7 @@ export default function FretboardTrainer({ save, onActiveChange }: { save: SaveR
           </MasterySelect>}
         </>}
       </div>
+      </>}
       <div className="mastery-quiz-banner">
         <strong>{mode === 'explore' ? played ? `${noteLabel(played.midi)} · สาย ${played.string}` : 'แตะช่องเฟร็ตเพื่อฟังเสียง'
           : question ? mode === 'name' ? `ชื่อโน้ตที่สาย ${question.string} · เฟร็ต ${question.fret} คืออะไร?`

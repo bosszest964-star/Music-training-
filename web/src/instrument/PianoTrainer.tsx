@@ -21,14 +21,17 @@ const handLabels = { both: 'สองมือ', left: 'มือซ้าย', 
 
 const clock = () => performance.now() / 1000
 
-export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound; onActiveChange: (active: boolean) => void }) {
-  const [selection, setSelection] = useState(pianoCurriculum[0].id)
+export default function PianoTrainer({ save, onActiveChange, preset }: {
+  save: SaveRound; onActiveChange: (active: boolean) => void
+  preset?: { id?: string; song?: PianoSong; hand?: PianoHand | 'both'; timed?: boolean }
+}) {
+  const [selection, setSelection] = useState(preset?.id ?? pianoCurriculum[0].id)
   const [group, setGroup] = useState<keyof typeof pianoGroups>(pianoCurriculum[0].group)
-  const [hand, setHand] = useState<PianoHand | 'both'>('both')
+  const [hand, setHand] = useState<PianoHand | 'both'>(preset?.hand ?? 'both')
   const [imported, setImported] = useState<PianoSong | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [wait, setWait] = useState(true)
+  const [wait, setWait] = useState(!preset?.timed)
   const [state, setState] = useState<'idle' | 'playing' | 'paused' | 'complete'>('idle')
   const [view, setView] = useState<ReturnType<PianoRound['snapshot']> | null>(null)
   const [score, setScore] = useState<number | null>(null)
@@ -42,8 +45,8 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
   const importId = useRef(0)
   const micSilentUntil = useRef(0)
   const scroller = useRef<HTMLDivElement>(null)
-  const lesson = pianoById.get(selection)
-  const fullSong = lesson ?? imported ?? pianoCurriculum[0]
+  const lesson = preset?.song ? undefined : pianoById.get(selection)
+  const fullSong = preset?.song ?? lesson ?? imported ?? pianoCurriculum[0]
   const song = useMemo(() => songForHand(fullSong, hand), [fullSong, hand])
   const layout = useMemo(() => pianoKeys(song.low, song.high), [song])
   const sound = useStudioSound()
@@ -161,7 +164,7 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
         setState('complete')
         save({
           activity: 'piano', label: lesson?.hands ? `${song.title} · ${handLabels[hand]}` : song.title,
-          exerciseId: lesson?.id, duration: elapsed.current + now - started.current, accuracy: round.accuracy(),
+          exerciseId: lesson?.id, attempts: snapshot.count + snapshot.wrong, duration: elapsed.current + now - started.current, accuracy: round.accuracy(),
         })
       } else {
         frame = requestAnimationFrame(tick)
@@ -280,7 +283,7 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
         <span className="tool-icon purple"><FileMusic size={22} /></span>
         <div><h2 id="piano-title">เปียโนและโน้ตไหล</h2><p>เล่นบนลิ่มนิ้ว ใช้ไมโครโฟน หรือเชื่อมต่อคีย์บอร์ด MIDI</p></div>
       </header>
-      <div className="instrument-toolbar mastery-groups" role="group" aria-label="หมวดคลังเปียโน">
+      {!preset && <div className="instrument-toolbar mastery-groups" role="group" aria-label="หมวดคลังเปียโน">
         {Object.entries(pianoGroups).map(([id, label]) => (
           <button key={id} className="subtle-button" aria-pressed={group === id && !!lesson} disabled={inRound || loading}
             onClick={() => {
@@ -290,8 +293,9 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
               select(first.id)
             }}>{label}</button>
         ))}
-      </div>
+      </div>}
       <div className="instrument-toolbar">
+        {!preset && <>
         <MasterySelect label="เพลงหรือแบบฝึกหัด" value={selection} disabled={inRound || loading} onChange={select}>
           {lessons.map(entry => <option value={entry.id} key={entry.id}>{entry.title}</option>)}
           {imported && <option value="file">{imported.title}</option>}
@@ -303,11 +307,11 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
             event.currentTarget.value = ''
             if (file) void load(file)
           }} />
-        </label>
-        <label className="instrument-toggle"><input type="checkbox" checked={wait} disabled={inRound}
+        </label></>}
+        <label className="instrument-toggle"><input type="checkbox" checked={wait} disabled={inRound || !!preset?.timed}
           onChange={event => { reset(); setWait(event.currentTarget.checked) }} />โหมดรอโน้ต (Wait Mode)</label>
       </div>
-      {lesson?.hands && <div className="instrument-toolbar" role="group" aria-label="เลือกมือที่จะซ้อม">
+      {lesson?.hands && !preset?.hand && <div className="instrument-toolbar" role="group" aria-label="เลือกมือที่จะซ้อม">
         {(Object.keys(handLabels) as (keyof typeof handLabels)[]).map(value => (
           <button className="subtle-button" key={value} disabled={inRound} aria-pressed={hand === value} onClick={() => {
             if (value === hand) return
@@ -317,7 +321,7 @@ export default function PianoTrainer({ save, onActiveChange }: { save: SaveRound
           }}>{handLabels[value]}</button>
         ))}
       </div>}
-      <p className="instrument-hint">{song.credit} · {song.total} โน้ต{lesson && ` · ระดับ${difficultyNames[lesson.difficulty]} · ${lesson.bpm} BPM`}</p>
+      <p className="instrument-hint">{preset && <strong>{song.title} · </strong>}{song.credit} · {song.total} โน้ต{lesson && ` · ระดับ${difficultyNames[lesson.difficulty]} · ${lesson.bpm} BPM`}</p>
       {lesson?.hands && hand === 'both' && <p className="instrument-hint mastery-hand-key"><i />มือซ้าย <i />มือขวา</p>}
       {error && <p className="field-error" role="alert">{error}</p>}
       <div className="instrument-toolbar instrument-inputs">

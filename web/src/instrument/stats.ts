@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { gradeStars } from '../exerciseMetadata'
 import { instrumentExerciseById } from './mastery/catalog'
 
-const prefix = 'music-training.instrument.round.v1:'
+export const instrumentStoragePrefix = 'music-training.instrument.round.v1:'
 
 export const activityLabels = {
   piano: 'โน้ตไหล', chords: 'เปลี่ยนคอร์ด · ประเมินเอง', strum: 'ตีคอร์ด',
@@ -12,7 +12,7 @@ export const activityLabels = {
 type Activity = keyof typeof activityLabels
 type PracticeResult = { label: string; duration: number; exerciseId?: string }
 type GradedActivity = Exclude<Activity, 'strum'>
-type GradedResult = { [Mode in GradedActivity]: { activity: Mode; accuracy: number; stars?: number } }[GradedActivity]
+type GradedResult = { [Mode in GradedActivity]: { activity: Mode; accuracy: number; stars?: number; attempts?: number } }[GradedActivity]
 type Result = PracticeResult & ({ activity: 'strum' } | GradedResult)
 type RoundRecord = Result & { id: string; date: number }
 export type SaveRound = (result: Result) => void
@@ -24,7 +24,7 @@ export function roundStars(round: Result) {
   return { stars: round.stars ?? gradeStars(round.accuracy, 100, exercise.maxStars), max: exercise.maxStars }
 }
 
-function parseRound(raw: string | null, id: string): RoundRecord | null {
+export function parseInstrumentRound(raw: string | null, id: string): RoundRecord | null {
   try {
     const data = JSON.parse(raw ?? 'null')
     if (!data || !Object.hasOwn(activityLabels, data.activity) || typeof data.label !== 'string'
@@ -38,7 +38,8 @@ function parseRound(raw: string | null, id: string): RoundRecord | null {
     if (!Number.isInteger(data.accuracy) || data.accuracy < 0 || data.accuracy > 100) return null
     const stars = typeof data.stars === 'number' && Number.isInteger(data.stars) && data.stars >= 0
       && exercise && data.stars <= exercise.maxStars ? data.stars : undefined
-    return { ...common, activity, accuracy: data.accuracy, stars }
+    const attempts = Number.isSafeInteger(data.attempts) && data.attempts >= 0 ? data.attempts as number : undefined
+    return { ...common, activity, accuracy: data.accuracy, stars, attempts }
   } catch {
     return null
   }
@@ -52,8 +53,8 @@ function readRounds() {
   const rounds: RoundRecord[] = []
   try {
     for (const key of Object.keys(localStorage)) {
-      if (!key.startsWith(prefix)) continue
-      const round = parseRound(localStorage.getItem(key), key.slice(prefix.length))
+      if (!key.startsWith(instrumentStoragePrefix)) continue
+      const round = parseInstrumentRound(localStorage.getItem(key), key.slice(instrumentStoragePrefix.length))
       if (round) rounds.push(round)
     }
     return { rounds: sorted(rounds), storageError: false }
@@ -69,9 +70,9 @@ export function useInstrumentStats() {
     function sync(event: StorageEvent) {
       if (event.storageArea !== localStorage) return
       if (event.key === null) setStats(readRounds())
-      else if (event.key.startsWith(prefix)) {
-        const id = event.key.slice(prefix.length)
-        const round = parseRound(event.newValue, id)
+      else if (event.key.startsWith(instrumentStoragePrefix)) {
+        const id = event.key.slice(instrumentStoragePrefix.length)
+        const round = parseInstrumentRound(event.newValue, id)
         setStats(previous => {
           const next = previous.rounds.filter(item => item.id !== id)
           if (round) next.push(round)
@@ -88,7 +89,7 @@ export function useInstrumentStats() {
     const round = { ...result, id, date: Date.now() }
     let storageError = false
     try {
-      localStorage.setItem(prefix + id, JSON.stringify(round))
+      localStorage.setItem(instrumentStoragePrefix + id, JSON.stringify(round))
     } catch {
       storageError = true
     }
