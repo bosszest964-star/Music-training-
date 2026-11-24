@@ -31,14 +31,17 @@ function CampaignStage({ stage, best, onAward, back, next, sources, onActiveChan
 
   return (
     <>
-      <div className="journey-actions"><button className="subtle-button" onClick={back}><Map size={17} />กลับแผนที่</button></div>
-      <section className="hero journey-hero">
-        <div className="hero-copy"><h1>{stage.label}</h1>
+      <header className="hero journey-hero journey-stage-hero">
+        <div className="hero-copy">
+          <button type="button" className="subtle-button journey-stage-back" onClick={back}>
+            <Map size={17} />กลับแผนที่
+          </button>
+          <h1>{stage.label}</h1>
           <span>บท {stage.world} · {stage.boss ? 'บอส' : 'ด่าน'} {stage.number}/50 · {stage.skill}</span>
         </div>
         {stage.boss ? <Trophy size={95} className="journey-hero-mark" aria-hidden="true" />
           : <Flag size={95} className="journey-hero-mark" aria-hidden="true" />}
-      </section>
+      </header>
       <section className="panel journey-panel">
         <header className="journey-heading">
           <div><h2>เป้าหมายด่าน</h2>
@@ -130,7 +133,7 @@ export default function CampaignPage({ progress, sources, onActiveChange }: Runn
                 </header>
                 <footer className="journey-node-footer">
                   {!canPlay && <p className="journey-muted" id={requirementId}>ต้องผ่านด่าน {stage.number - 1} ก่อน</p>}
-                  <button type="button" className={canPlay ? 'primary-button journey-node-action' : 'subtle-button journey-node-action'}
+                  <button type="button" className="primary-button journey-node-action"
                     disabled={!canPlay} aria-describedby={canPlay ? titleId : titleId + ' ' + requirementId}
                     onClick={() => open(stage)}>
                     {canPlay ? <Play size={17} /> : <LockKeyhole size={17} />}{canPlay ? 'เริ่มเล่น' : 'ยังล็อก'}

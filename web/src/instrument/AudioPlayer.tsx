@@ -1,3 +1,4 @@
+import { resumeAudio } from '../audio/resumeAudio'
 import { useEffect, useRef, useState } from 'react'
 import { AudioLines, FolderOpen, Pause, Play, Repeat2 } from 'lucide-react'
 import { createDeckGraph, decodeWaveform, loopSeek, minLoopLength, preservePitch, presets } from './audioDeck'
@@ -128,7 +129,7 @@ export default function AudioPlayer({ onActiveChange }: { onActiveChange: (activ
       }
       const next = loopSeek(media.currentTime, loopRef.current)
       if (next !== media.currentTime) media.currentTime = next
-      const activation = graph.current?.context.resume()
+      const activation = graph.current && resumeAudio(graph.current.context)
       await Promise.all([media.play(), activation])
     } catch {
       if (token === generation.current) {

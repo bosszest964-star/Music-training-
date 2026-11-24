@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { AudioLines, ChevronDown, Hand, Play, Square } from 'lucide-react'
 import { difficultyNames } from '../exerciseMetadata'
@@ -27,6 +27,7 @@ export default function RhythmTapTrainer({ stats, preset }: { stats: EarStatsDat
   const run = useRef(0)
   const active = useRef<Mode | null>(null)
   const tapButton = useRef<HTMLButtonElement>(null)
+  const flashTimer = useRef(0)
   const beat = 60 / pattern.bpm
   const duration = pattern.beats * beat
   const targets = pattern.taps.map(tap => tap * beat)
@@ -34,12 +35,18 @@ export default function RhythmTapTrainer({ stats, preset }: { stats: EarStatsDat
   const pulses = barPulses(pattern)
   const next = !preset && rhythmPatterns[rhythmPatterns.indexOf(pattern) + 1]
 
+  const clearPadFlash = useCallback(() => {
+    window.clearTimeout(flashTimer.current)
+    tapButton.current?.removeAttribute('data-tapped')
+  }, [])
+
   useEffect(() => {
     function hide() {
       if (!document.hidden || !active.current) return
       run.current += 1
       active.current = null
       player.stop()
+      clearPadFlash()
       setMode(null)
       setTime(null)
       setTaps([])
@@ -51,12 +58,13 @@ export default function RhythmTapTrainer({ stats, preset }: { stats: EarStatsDat
       run.current += 1
       active.current = null
       player.dispose()
+      clearPadFlash()
     }
-  }, [player])
+  }, [player, clearPadFlash])
 
   useEffect(() => {
     if (!mode) return
-    if (mode === 'round') tapButton.current?.focus()
+    if (mode === 'round') tapButton.current?.focus({ preventScroll: true })
     let frame = 0
     function render() {
       setTime(player.position())
@@ -70,6 +78,7 @@ export default function RhythmTapTrainer({ stats, preset }: { stats: EarStatsDat
     run.current += 1
     active.current = null
     player.stop()
+    clearPadFlash()
     setMode(null)
     setTime(null)
     setTaps([])
@@ -93,9 +102,18 @@ export default function RhythmTapTrainer({ stats, preset }: { stats: EarStatsDat
     setError('')
     current.current = []
     used.current.clear()
+
+    function fail(message: string) {
+      if (run.current !== token) return
+      stop()
+      player.dispose()
+      setError(message)
+    }
+
     void player.start(pattern, nextMode === 'demo', () => {
       if (run.current !== token) return
       active.current = null
+      clearPadFlash()
       setMode(null)
       setTime(null)
       if (nextMode === 'round') {
@@ -103,15 +121,17 @@ export default function RhythmTapTrainer({ stats, preset }: { stats: EarStatsDat
         setResult(summary)
         stats.recordExercise(pattern, summary.correct, summary.attempts, current.current.length > 0)
       }
-    }).catch(() => {
-      if (run.current !== token) return
-      stop()
-      setError('เปิดเสียงจังหวะไม่ได้ ลองแตะเริ่มใหม่')
+    }, () => fail('เสียงจังหวะถูกพัก ลองแตะเริ่มใหม่')).catch(() => {
+      fail('เปิดเสียงจังหวะไม่ได้ ลองแตะเริ่มใหม่')
     })
   }
 
   function tap(timestamp: number) {
     if (active.current !== 'round') return
+    window.clearTimeout(flashTimer.current)
+    tapButton.current?.setAttribute('data-tapped', '')
+    flashTimer.current = window.setTimeout(clearPadFlash, 115)
+
     const position = player.position(timestamp)
     if (position === null || position < -0.145 || position > duration + 0.02) return
     const mark = judgeTap(targets, used.current, position)

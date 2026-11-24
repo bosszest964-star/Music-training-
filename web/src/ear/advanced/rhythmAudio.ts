@@ -1,9 +1,10 @@
+import { resumeAudio } from '../../audio/resumeAudio'
 import { playMetronomeClick } from '../../audio/metronomeClick'
 import { barPulses } from './rhythmPatterns'
 import type { RhythmPattern } from './rhythmPatterns'
 import { audibleTime, eventTime } from './rhythmScore'
 
-type Session = { bus: GainNode; marker: ConstantSourceNode; start: number }
+type Session = { bus: GainNode; marker: ConstantSourceNode; start: number; stateChanged: () => void }
 
 export function createRhythmAudio() {
   let context: AudioContext | undefined
@@ -16,6 +17,7 @@ export function createRhythmAudio() {
     active = undefined
     if (!session || !context) return
     const now = context.currentTime
+    context.removeEventListener('statechange', session.stateChanged)
     session.marker.onended = null
     session.marker.stop(now)
     session.marker.disconnect()
@@ -23,11 +25,11 @@ export function createRhythmAudio() {
     window.setTimeout(() => session.bus.disconnect(), 45)
   }
 
-  async function start(pattern: RhythmPattern, demo: boolean, onEnd: () => void) {
+  async function start(pattern: RhythmPattern, demo: boolean, onEnd: () => void, onInterrupt: () => void) {
     stop()
     const id = token
     const audio = context ??= new AudioContext({ latencyHint: 'interactive' })
-    await audio.resume()
+    await resumeAudio(audio)
     if (id !== token) return
     const beat = 60 / pattern.bpm
     const count = audio.currentTime + 0.075
@@ -50,17 +52,22 @@ export function createRhythmAudio() {
     const marker = audio.createConstantSource()
     marker.offset.value = 0
     marker.connect(bus)
-    const session = { bus, marker, start }
+    const session = { bus, marker, start, stateChanged }
+    function stateChanged() {
+      if (active === session && audio.state !== 'running') onInterrupt()
+    }
     active = session
     marker.onended = () => {
       if (active !== session) return
       active = undefined
+      audio.removeEventListener('statechange', stateChanged)
       marker.disconnect()
       bus.disconnect()
       onEnd()
     }
     marker.start(count)
     marker.stop(end + 0.23)
+    audio.addEventListener('statechange', stateChanged)
   }
 
   function position(timestamp = performance.now()) {

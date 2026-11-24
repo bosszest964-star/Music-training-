@@ -1,3 +1,4 @@
+import { resumeAudio } from '../audio/resumeAudio'
 import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, Play, Square, Wind } from 'lucide-react'
 import { playMetronomeClick } from '../audio/metronomeClick'
@@ -60,9 +61,8 @@ export default function BreathingPacer({ save, onActiveChange }: {
       current = { context, frame: 0 }
       const run = current
       session.current = run
-      await context.resume()
+      await resumeAudio(context)
       if (session.current !== run) return
-      if (context.state !== 'running') throw new Error('Audio context is not running')
       const duration = exercise.cycle * cycles
       const startTime = context.currentTime + 0.12
       if (sound) {

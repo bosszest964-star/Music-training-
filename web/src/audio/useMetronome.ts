@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { resumeAudio } from './resumeAudio'
 import { playMetronomeClick } from './metronomeClick'
 
 export const meters = {
@@ -89,7 +90,7 @@ export function useMetronome() {
       }
       session = nextPlayback
       playback.current = nextPlayback
-      await context.resume()
+      await resumeAudio(context)
       if (playback.current !== session) return
       nextPlayback.nextTime = context.currentTime + 0.045
 

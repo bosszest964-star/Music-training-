@@ -1,3 +1,6 @@
+/* Embedded trainers inherit these defaults outside the ear-training page. */
+:root { --ear-accent: #c9aff9; --ear-tint: #352847; --ear-edge: #695385; }
+
 .ear-hero {
   background: radial-gradient(ellipse at 82% 42%, #523778, transparent 55%), linear-gradient(100deg, #312243, #2b213d);
 }
@@ -68,10 +71,7 @@
 .ear-playback .primary-button {
   min-width: 136px;
   min-height: 46px;
-  background: var(--ear-accent);
-  border-color: var(--ear-accent);
 }
-.ear-playback .primary-button:hover { filter: brightness(1.08); }
 .ear-playback .ear-control { justify-items: start; }
 
 .ear-answer-set { min-inline-size: 0; }
@@ -176,9 +176,8 @@
 .eq-listen h2 { font-size: 1.2rem; font-weight: 700; }
 .eq-listen p { margin-top: 2px; color: var(--muted); font-size: .9rem; }
 .eq-listen .primary-button {
-  flex: none; margin-left: auto; min-width: 105px; color: #382520; background: var(--ear-accent); border-color: var(--ear-accent);
+  flex: none; margin-left: auto; min-width: 105px;
 }
-.eq-listen .primary-button:hover:not(:disabled) { filter: brightness(1.08); }
 .eq-explore-head { align-items: center; justify-content: space-between; }
 .eq-explore-head button[aria-pressed="true"] { color: var(--ear-accent); border-color: var(--ear-edge); background: var(--ear-tint); }
 .eq-gain {
@@ -231,10 +230,6 @@
 .advanced-transport { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 13px; }
 .advanced-transport > span { color: var(--muted); font-size: .91rem; }
 .advanced-transport strong { color: var(--ear-accent); }
-.advanced-transport .primary-button, .rhythm-pad {
-  background: var(--ear-accent); border-color: var(--ear-accent); color: #251a33;
-}
-.advanced-transport .primary-button:hover:not(:disabled), .rhythm-pad:hover:not(:disabled) { filter: brightness(1.08); }
 .advanced-result, .advanced-explainer {
   padding: 10px 12px; background: var(--inset); border: 1px solid var(--ear-edge); border-radius: 9px;
 }
@@ -286,10 +281,21 @@
 .rhythm-readout strong[data-grade="exact"] { color: #96e7c7; }
 .rhythm-pad {
   display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%;
-  min-height: 100px; border: 1px solid; border-radius: 11px; touch-action: manipulation; user-select: none;
-  font-size: 1.23rem; font-weight: 800;
+  min-height: 100px; border: 2px solid #ab8fea; border-radius: 11px;
+  background-color: #463064; color: #fdfaff;
+  box-shadow: 0 3px 0 #231932;
+  touch-action: manipulation; user-select: none; font-size: 1.23rem; font-weight: 800;
 }
-.rhythm-pad:active:not(:disabled) { background: #fff0cd; }
+@media (hover: hover) {
+  .rhythm-pad:hover:not(:disabled) { background-color: #523a73; }
+}
+.rhythm-pad:disabled {
+  background-color: #342747; border-color: #967bc7; color: #e8dcfa; opacity: 1;
+}
+.rhythm-pad:is(:active, [data-tapped]):not(:disabled) {
+  background-color: #7651ae; border-color: #e6d5ff;
+  box-shadow: inset 0 0 0 2px #d9baff6b, 0 0 15px #ad85fa6b;
+}
 .rhythm-hint { color: var(--muted); font-size: .85rem; }
 .rhythm-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); gap: 6px; }
 .rhythm-summary > div { padding: 6px 8px; background: var(--inset); border: 1px solid #4a394a; border-radius: 6px; }

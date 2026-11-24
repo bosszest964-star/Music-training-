@@ -225,7 +225,7 @@ button, select, input { -webkit-tap-highlight-color: transparent; }
 .string-options button { flex: 1; }
 .tool-actions { display: flex; gap: 9px; }
 .tool-actions .primary-button { flex: 1; }
-.primary-button, .cyan-button, .subtle-button {
+.primary-button, .subtle-button {
   display: inline-flex;
   gap: 8px;
   align-items: center;
@@ -238,12 +238,29 @@ button, select, input { -webkit-tap-highlight-color: transparent; }
   line-height: 1.25;
   transition: background .17s, border-color .17s;
 }
-.primary-button svg, .cyan-button svg, .subtle-button svg { flex: none; }
-.primary-button { background: #b898ff; border: 1px solid #c39fff; color: #20132f; }
-.primary-button:hover:not(:disabled) { background: #cfb6ff; }
+.primary-button svg, .subtle-button svg { flex: none; }
+.primary-button {
+  appearance: none;
+  min-height: 44px;
+  background-color: #b399f8;
+  border: 1px solid #dac5ff;
+  color: #0f172a;
+  box-shadow: 0 2px 0 #765da2, 0 4px 10px #10091f55;
+  touch-action: manipulation;
+}
+@media (hover: hover) {
+  .primary-button:where(:hover) { background-color: #cdb5ff; }
+}
+.primary-button:where(:active) { background-color: #d7c3ff; box-shadow: inset 0 1px 3px #765da266; }
+.primary-button:is(:disabled, :has(input:disabled)) {
+  background-color: #334155;
+  border-color: #7c8ba1;
+  color: #e2e8f0;
+  opacity: 1;
+  box-shadow: none;
+  cursor: default;
+}
 .subtle-button { background: #2a2337; border: 1px solid #433551; color: #e5d8f7; }
-.cyan-button { background: #253c40; border: 1px solid #3e6668; color: #92ede4; }
-.cyan-button:hover:not(:disabled) { background: #315358; border-color: #5b9794; }
 .field-hint, .field-error { font-size: .875rem; }
 .field-hint { color: var(--muted); }
 .field-error { color: #ffb8c7; }
@@ -300,7 +317,6 @@ button, select, input { -webkit-tap-highlight-color: transparent; }
 .practice-session span, .history-title p { color: var(--muted); font-size: .875rem; }
 .practice-session output { font-size: clamp(1.6rem, 3vw, 2.15rem); line-height: 1.1; font-weight: 800; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
 .practice-session output.counting { color: var(--purple); }
-.practice-count .subtle-button { min-height: 38px; }
 .history-title { display: flex; gap: 8px; justify-content: space-between; }
 .history-title h3 { font-size: .97rem; font-weight: 700; }
 .history-title p { margin-top: 3px; }

@@ -1,3 +1,4 @@
+import { resumeAudio } from '../audio/resumeAudio'
 import { playNote } from '../audio/noteSynth'
 import type { Voice } from '../audio/noteSynth'
 import { pianoReady, playPiano } from '../audio/pianoEngine'
@@ -22,7 +23,7 @@ export function createEarAudio() {
     stop()
     const playback = generation
     const audio = context ??= new AudioContext({ latencyHint: 'interactive' })
-    await audio.resume()
+    await resumeAudio(audio)
     if (playback !== generation) return
     const bus = audio.createGain()
     bus.gain.value = 0.68

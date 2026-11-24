@@ -181,7 +181,7 @@ function Tuner({ tuner }: { tuner: ReturnType<typeof useTuner> }) {
       )}
       {error && <p className="field-error" role="alert">{error}</p>}
       <div className="tool-actions">
-        <button className="cyan-button w-full" onClick={state === 'idle' ? () => void tuner.start() : tuner.stop}>
+        <button className="primary-button w-full" onClick={state === 'idle' ? () => void tuner.start() : tuner.stop}>
           {state === 'idle' ? <Mic size={18} /> : <MicOff size={18} />}
           {state === 'starting' ? 'ยกเลิกเปิดไมโครโฟน' : listening ? 'ปิดไมโครโฟน' : 'เปิดไมโครโฟน'}
         </button>
@@ -215,7 +215,7 @@ function Practice({ practice }: { practice: ReturnType<typeof usePractice> }) {
             <span>เซสชันนี้</span>
             <output aria-live="off" className={running ? 'counting' : ''}>{clock(elapsed)}</output>
           </div>
-          <button className="subtle-button" onClick={toggle}>
+          <button className="primary-button" onClick={toggle}>
             {running ? <Pause size={16} /> : <Play size={16} />}{running ? 'พักเวลา' : 'เริ่มจับเวลา'}
           </button>
         </div>
