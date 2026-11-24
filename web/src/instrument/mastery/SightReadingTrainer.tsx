@@ -17,20 +17,28 @@ import { clefs, noteName, readingChoices, readingExercise, readingLevels, readin
 import type { Clef, StaffNote } from './sightReading'
 import { challengeSeconds, useNoteQuiz } from './useNoteQuiz'
 
-export default function SightReadingTrainer({ save, onActiveChange }: { save: SaveRound; onActiveChange: (active: boolean) => void }) {
-  const [clef, setClef] = useState<Clef>('treble')
-  const [level, setLevel] = useState<ExerciseDifficulty>('beginner')
-  const [timed, setTimed] = useState(true)
+export default function SightReadingTrainer({ save, onActiveChange, preset }: {
+  save: SaveRound; onActiveChange: (active: boolean) => void
+  preset?: { clef: Clef; difficulty: ExerciseDifficulty; notes?: readonly StaffNote[]; meter?: string }
+}) {
+  const [clef, setClef] = useState<Clef>(preset?.clef ?? 'treble')
+  const [level, setLevel] = useState<ExerciseDifficulty>(preset?.difficulty ?? 'beginner')
+  const [timed, setTimed] = useState(!preset?.notes)
   const [input, setInput] = useState<'name' | 'keys'>('name')
   const [thai, setThai] = useState(false)
   const { piano, ready, error } = useStudioSound()
   const exercise = readingExercise(clef, level)
   const quiz = useNoteQuiz<StaffNote>({
-    next: previous => readingQuestion(clef, level, previous), timed, maxStars: exercise.maxStars, onActiveChange,
-    onFinish: result => save({ activity: 'reading', label: `${clefs[clef]} · ${timed ? 'จับเวลา' : 'ฝึกอิสระ'}`,
-      accuracy: result.accuracy, duration: result.duration, stars: result.stars, exerciseId: exercise.id }),
+    next: previous => {
+      const notes = preset?.notes
+      return notes?.length ? notes[(previous ? notes.indexOf(previous) + 1 : 0) % notes.length]
+        : readingQuestion(clef, level, previous)
+    }, timed, maxStars: exercise.maxStars, onActiveChange, questionLimit: preset?.notes?.length,
+    onFinish: result => save({ activity: 'reading', label: `${clefs[clef]} · ${preset?.notes ? 'โจทย์สร้างใหม่' : timed ? 'จับเวลา' : 'ฝึกอิสระ'}`,
+      accuracy: result.accuracy, attempts: result.attempts, duration: result.duration, stars: result.stars, exerciseId: exercise.id }),
   })
   const { question } = quiz
+  const choicesLevel = preset?.notes?.some(note => note.accidental !== 0) ? 'advanced' : level
   const staff = question?.clef ?? (clef === 'bass' ? 'bass' : 'treble')
   const { low, high } = readingLevels[level]
   const layout = useMemo(() => pianoKeys(staffNote(staff, low).midi - 1, staffNote(staff, high).midi + 1), [staff, low, high])
@@ -50,7 +58,7 @@ export default function SightReadingTrainer({ save, onActiveChange }: { save: Sa
         <span className="tool-icon purple"><Music2 size={22} /></span>
         <div><h2 id="sight-title">ฝึกอ่านโน้ตบรรทัดห้าเส้น</h2><p>เลือกชื่อโน้ต หรือเล่นระดับเสียงที่เห็นด้วยเปียโนหรือ MIDI</p></div>
       </header>
-      <div className="instrument-toolbar">
+      {!preset && <div className="instrument-toolbar">
         <MasterySelect label="บรรทัดและกุญแจ" value={clef} disabled={quiz.active} onChange={next => {
           setClef(next as Clef)
           quiz.reset()
@@ -68,7 +76,7 @@ export default function SightReadingTrainer({ save, onActiveChange }: { save: Sa
           setTimed(event.currentTarget.checked)
           quiz.reset()
         }} />ท้าทาย {challengeSeconds} วินาที</label>
-      </div>
+      </div>}
       <div className="instrument-toolbar">
         <div className="instrument-toolbar" role="group" aria-label="วิธีตอบโน้ต">
           <button className="subtle-button" aria-pressed={input === 'name'} onClick={() => setInput('name')}>ชื่อโน้ต</button>
@@ -79,9 +87,9 @@ export default function SightReadingTrainer({ save, onActiveChange }: { save: Sa
       <div className="mastery-quiz-banner">
         <strong>{quiz.active ? (input === 'keys' ? `เล่นโน้ตให้ตรงอ็อกเทฟบน${clefs[staff]}` : 'โน้ตบนบรรทัดชื่ออะไร?')
           : timed ? `ตอบให้ได้มากที่สุดใน ${challengeSeconds} วินาที` : 'ฝึกอิสระ · จบรอบเมื่อต้องการ'}</strong>
-        {quiz.active && <span>{timed && `${quiz.remaining} วินาที · `}ถูก {quiz.tally.correct}/{quiz.tally.attempts}</span>}
+        {quiz.active && <span>{timed && `${quiz.remaining} วินาที · `}ถูก {quiz.tally.correct}/{quiz.tally.attempts}{preset?.notes && ' · ' + preset.notes.length + ' โน้ต'}</span>}
       </div>
-      <MusicStaff clef={clef} note={question} />
+      <MusicStaff clef={clef} note={question} meter={preset?.meter} />
       {input === 'name' ? (
         <>
           <div className="instrument-toolbar" role="group" aria-label="ภาษาแสดงชื่อโน้ต">
@@ -89,7 +97,7 @@ export default function SightReadingTrainer({ save, onActiveChange }: { save: Sa
             <button className="subtle-button" aria-pressed={thai} onClick={() => setThai(true)}>โด–เร–มี</button>
           </div>
           <div className="mastery-note-options" aria-label="คำตอบ">
-            {readingChoices(level).map(({ letter, accidental }) => (
+            {readingChoices(choicesLevel).map(({ letter, accidental }) => (
               <button key={`${letter}:${accidental}`} className="subtle-button" disabled={!question || !!quiz.feedback}
                 onClick={() => {
                   if (!question) return

@@ -9,6 +9,14 @@ const harmonies = {
   IV: [5, [0, 4, 7], ''],
   V: [7, [0, 4, 7], ''],
   vi: [9, [0, 3, 7], 'm'],
+  i: [0, [0, 3, 7], 'm'],
+  'ii°': [2, [0, 3, 6], 'dim'],
+  III: [3, [0, 4, 7], ''],
+  VI: [8, [0, 4, 7], ''],
+  VII: [10, [0, 4, 7], ''],
+  im7: [0, [0, 3, 7, 10], 'm7'],
+  'iiø7': [2, [0, 3, 6, 10], 'm7♭5'],
+  VImaj7: [8, [0, 4, 7, 11], 'maj7'],
   iv: [5, [0, 3, 7], 'm'],
   Imaj7: [0, [0, 4, 7, 11], 'maj7'],
   ii7: [2, [0, 3, 7, 10], 'm7'],
@@ -68,6 +76,11 @@ export function chordVoicing(tonic: number, chord: RomanChord) {
 export function progressionQuestion(difficulty: ExerciseDifficulty, previous?: Progression, previousTonic?: number) {
   const pool = progressions.filter(item => item.difficulty === difficulty)
   const [correct] = sampleDistinct(pool.filter(item => item !== previous), 1)
+  return progressionForExercise(correct, previousTonic)
+}
+
+export function progressionForExercise(correct: Progression, previousTonic?: number) {
+  const pool = progressions.filter(item => item.difficulty === correct.difficulty)
   const options = sampleDistinct([correct, ...sampleDistinct(pool.filter(item => item !== correct), 3)], 4)
   const keys = Array.from({ length: 12 }, (_, index) => 48 + index).filter(key => key !== previousTonic)
   const [tonic] = sampleDistinct(keys, 1)

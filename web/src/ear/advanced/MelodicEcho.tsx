@@ -13,9 +13,9 @@ import { usePhrase } from './usePhrase'
 const layout = pianoKeys(60, 83)
 const octaves = [layout.keys.slice(0, 12), layout.keys.slice(12, 24)]
 
-export default function MelodicEcho({ stats }: { stats: EarStatsData }) {
+export default function MelodicEcho({ stats, preset }: { stats: EarStatsData; preset?: ReturnType<typeof melodyQuestion> }) {
   const [difficulty, setDifficulty] = useState<ExerciseDifficulty>('beginner')
-  const [round, setRound] = useState(() => melodyQuestion('beginner'))
+  const [round, setRound] = useState(() => preset ?? melodyQuestion('beginner'))
   const [heard, setHeard] = useState(false)
   const [answers, setAnswers] = useState<number[]>([])
   const current = useRef<number[]>([])
@@ -25,7 +25,7 @@ export default function MelodicEcho({ stats }: { stats: EarStatsData }) {
   function reset(next: ExerciseDifficulty) {
     audio.stop()
     setDifficulty(next)
-    setRound(melodyQuestion(next, round.exercise))
+    setRound(preset ?? melodyQuestion(next, round.exercise))
     setHeard(false)
     current.current = []
     setAnswers([])
@@ -49,7 +49,7 @@ export default function MelodicEcho({ stats }: { stats: EarStatsData }) {
       <div className="advanced-heading"><div>
         <h2>ฟังทำนองแล้วเล่นตาม</h2>
         <p>เริ่มที่โน้ตที่บอกไว้ แล้วเล่นตามลำดับที่ได้ยิน</p>
-      </div><TrainingDifficulty value={difficulty} change={next => { if (next !== difficulty) reset(next) }} /></div>
+      </div>{!preset && <TrainingDifficulty value={difficulty} change={next => { if (next !== difficulty) reset(next) }} />}</div>
       <PianoLoadStatus notes={layout.keys.map(key => key.midi)} />
       <div className="advanced-transport">
         <ListenButton playing={audio.playing === 'phrase'} heard={heard} listen={() => audio.listen(round.sound, () => setHeard(true))}
@@ -87,7 +87,7 @@ export default function MelodicEcho({ stats }: { stats: EarStatsData }) {
         ))}
       </div>
       {finished && <RoundGrade exercise={round.exercise} correct={correctCount(answers)} attempts={round.notes.length}>
-        <button type="button" className="subtle-button" onClick={() => reset(difficulty)}><RotateCcw size={16} />ทำนองถัดไป</button>
+        <button type="button" className="subtle-button" onClick={() => reset(difficulty)}><RotateCcw size={16} />{preset ? 'เล่นทำนองนี้อีกครั้ง' : 'ทำนองถัดไป'}</button>
       </RoundGrade>}
     </div>
   )

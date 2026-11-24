@@ -5,7 +5,7 @@ import { difficultyNames } from '../exerciseMetadata'
 import type { ExerciseDifficulty } from '../exerciseMetadata'
 import type { EarStatsData } from '../stats'
 import { createRhythmAudio } from './rhythmAudio'
-import { rhythmPatterns } from './rhythmPatterns'
+import { barPulses, rhythmPatterns } from './rhythmPatterns'
 import type { RhythmPattern } from './rhythmPatterns'
 import { accuracyWindowMs, exactWindowMs, judgeTap, summarizeTaps, tapNames } from './rhythmScore'
 import type { TapMark } from './rhythmScore'
@@ -14,8 +14,8 @@ import { RoundGrade } from './TrainingControls'
 type Mode = 'demo' | 'round'
 const levels = Object.keys(difficultyNames) as ExerciseDifficulty[]
 
-export default function RhythmTapTrainer({ stats }: { stats: EarStatsData }) {
-  const [pattern, setPattern] = useState(rhythmPatterns[0])
+export default function RhythmTapTrainer({ stats, preset }: { stats: EarStatsData; preset?: RhythmPattern }) {
+  const [pattern, setPattern] = useState<RhythmPattern>(preset ?? rhythmPatterns[0])
   const [mode, setMode] = useState<Mode | null>(null)
   const [time, setTime] = useState<number | null>(null)
   const [taps, setTaps] = useState<TapMark[]>([])
@@ -31,7 +31,8 @@ export default function RhythmTapTrainer({ stats }: { stats: EarStatsData }) {
   const duration = pattern.beats * beat
   const targets = pattern.taps.map(tap => tap * beat)
   const last = taps.at(-1)
-  const next = rhythmPatterns[rhythmPatterns.indexOf(pattern) + 1]
+  const pulses = barPulses(pattern)
+  const next = !preset && rhythmPatterns[rhythmPatterns.indexOf(pattern) + 1]
 
   useEffect(() => {
     function hide() {
@@ -100,7 +101,7 @@ export default function RhythmTapTrainer({ stats }: { stats: EarStatsData }) {
       if (nextMode === 'round') {
         const summary = summarizeTaps(pattern.taps.length, current.current)
         setResult(summary)
-        stats.recordExercise(pattern, summary.correct, summary.attempts)
+        stats.recordExercise(pattern, summary.correct, summary.attempts, current.current.length > 0)
       }
     }).catch(() => {
       if (run.current !== token) return
@@ -121,14 +122,14 @@ export default function RhythmTapTrainer({ stats }: { stats: EarStatsData }) {
 
   const progress = time === null ? 0 : Math.max(0, Math.min(100, time / duration * 100))
   const status = mode === null ? 'พร้อมเริ่ม' : time === null ? 'กำลังเปิดเสียง' :
-    time < 0 ? `นับนำ ${Math.max(1, Math.min(4, Math.ceil(-time / beat)))}` :
-      mode === 'demo' ? 'ฟังตัวอย่าง' : `ห้อง ${Math.min(pattern.beats / 4, 1 + Math.floor(time / beat / 4))}`
+    time < 0 ? `นับนำ ${Math.max(1, Math.min(pulses, Math.ceil(-time / beat)))}` :
+      mode === 'demo' ? 'ฟังตัวอย่าง' : `ห้อง ${Math.min(pattern.beats / pulses, 1 + Math.floor(time / beat / pulses))}`
 
   return (
     <div className="advanced-body rhythm-trainer">
       <div className="advanced-heading"><div><h2>เคาะจังหวะ</h2>
-        <p>ฟังนับนำ 4 จังหวะ แล้วเคาะเมื่อเส้นเวลาเดินถึงจุดของแพตเทิร์น</p></div>
-        <label className="eq-source"><span>เลือกด่าน</span><span className="eq-select">
+        <p>ฟังนับนำ {pulses} จังหวะ แล้วเคาะเมื่อเส้นเวลาเดินถึงจุดของแพตเทิร์น</p></div>
+        {!preset && <label className="eq-source"><span>เลือกด่าน</span><span className="eq-select">
           <select value={pattern.id} onChange={event => {
             const selected = rhythmPatterns.find(item => item.id === event.target.value)
             if (selected) change(selected)
@@ -141,19 +142,19 @@ export default function RhythmTapTrainer({ stats }: { stats: EarStatsData }) {
               </optgroup>
             ))}
           </select><ChevronDown size={16} /></span>
-        </label>
+        </label>}
       </div>
       <div className="advanced-transport">
         {mode ? <button type="button" className="subtle-button" onClick={stop}><Square size={17} />หยุดรอบ</button> : <>
           <button type="button" className="primary-button" onClick={() => start('round')}><Play size={17} />เริ่มเคาะ</button>
           <button type="button" className="subtle-button" onClick={() => start('demo')}><AudioLines size={17} />ฟังตัวอย่าง</button>
         </>}
-        <span>{pattern.bpm} BPM · 4/4 · {pattern.beats / 4} ห้อง · ดีที่สุด {stats.bestStars[pattern.id] ?? 0}/{pattern.maxStars} ดาว</span>
+        <span>{pattern.bpm} BPM · {pattern.meter ?? '4/4'} · {pattern.beats / pulses} ห้อง · ดีที่สุด {stats.bestStars[pattern.id] ?? 0}/{pattern.maxStars} ดาว</span>
       </div>
       {error && <p className="field-error" role="alert">{error}</p>}
       <div className="rhythm-chart" role="img" aria-label={`จุดเคาะของแพตเทิร์น ${pattern.taps.length} จุด`}>
         <div className="rhythm-grid" style={{ '--units': pattern.beats } as CSSProperties}>
-          {Array.from({ length: pattern.beats }, (_, index) => <span key={index}>{index % 4 + 1}</span>)}
+          {Array.from({ length: pattern.beats }, (_, index) => <span key={index}>{index % pulses + 1}</span>)}
         </div>
         {pattern.taps.map((at, index) => <i key={at} style={{ '--position': `${100 * at / pattern.beats}%` } as CSSProperties}
           data-grade={taps.find(tap => tap.index === index)?.grade ?? (result ? 'missed' : undefined)} />)}

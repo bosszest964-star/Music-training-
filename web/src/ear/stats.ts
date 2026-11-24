@@ -6,7 +6,7 @@ import { advancedCategories, gradeStars } from './exerciseMetadata'
 import type { AdvancedCategory, ExerciseMetadata } from './exerciseMetadata'
 import { exerciseById } from './advanced/catalog'
 
-const storagePrefix = 'music-training.ear.v1:'
+export const earStoragePrefix = 'music-training.ear.v1:'
 const topicIds = Object.keys(topics) as Topic[]
 
 interface Count {
@@ -23,11 +23,11 @@ function emptyCounts(): Counts {
   return Object.fromEntries(topicIds.map(topic => [topic, { correct: 0, attempts: 0 }])) as Counts
 }
 
-function parseCounts(raw: string | null) {
+export function parseCounts(raw: string | null) {
   if (!raw) return null
   try {
     const data = JSON.parse(raw)
-    if (!data || typeof data !== 'object') return null
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return null
     const counts = emptyCounts()
     for (const topic of topicIds) {
       const { correct, attempts } = data[topic] ?? {}
@@ -74,7 +74,7 @@ function summarize(records: History) {
       counts[topic].attempts += attempts
       total.correct += correct
       total.attempts += attempts
-      if (attempts) days.add(key.slice(storagePrefix.length, storagePrefix.length + 10))
+      if (attempts) days.add(key.slice(earStoragePrefix.length, earStoragePrefix.length + 10))
     }
   }
   const starsByCategory = Object.fromEntries(Object.keys(advancedCategories).map(id => [id, 0])) as Record<AdvancedCategory, number>
@@ -86,8 +86,8 @@ function summarize(records: History) {
   return { counts, total, days, bestStars, starsByCategory, totalStars }
 }
 
-function isHistoryKey(key: string) {
-  return key.startsWith(storagePrefix) && /^\d{4}-\d{2}-\d{2}:/.test(key.slice(storagePrefix.length))
+export function isHistoryKey(key: string) {
+  return key.startsWith(earStoragePrefix) && /^\d{4}-\d{2}-\d{2}:/.test(key.slice(earStoragePrefix.length))
 }
 
 function readHistory(): History | null {
@@ -108,7 +108,7 @@ export function accuracy({ correct, attempts }: Count) {
   return attempts ? `${Math.round(100 * correct / attempts)}%` : '—'
 }
 
-export function useEarStats() {
+export function useEarStats(onAnswer?: (correct: number, attempts: number) => void) {
   const [initial] = useState(readHistory)
   const [records, setRecords] = useState<History>(initial ?? {})
   const recordsRef = useRef(records)
@@ -136,12 +136,13 @@ export function useEarStats() {
     return () => window.removeEventListener('storage', sync)
   }, [])
 
-  function add(topic: Topic, correct: number, attempts: number, exercise?: ExerciseMetadata<AdvancedCategory>) {
-    const key = `${storagePrefix}${dayKey(new Date())}:${writerId}`
+  function add(topic: Topic, correct: number, attempts: number, exercise?: ExerciseMetadata<AdvancedCategory>, practiced = true) {
+    if (practiced) onAnswer?.(correct, attempts)
+    const key = `${earStoragePrefix}${dayKey(new Date())}:${writerId}`
     const bucket = recordsRef.current[key] ?? { ...emptyCounts(), bestStars: {} }
     const count = bucket[topic]
     const bestStars: Stars = { ...bucket.bestStars }
-    if (exercise) {
+    if (exercise && exerciseById.has(exercise.id)) {
       const stars = gradeStars(correct, attempts, exercise.maxStars)
       if (stars > (bestStars[exercise.id] ?? 0)) bestStars[exercise.id] = stars
     }
@@ -160,8 +161,8 @@ export function useEarStats() {
     add(topic, Number(correct), 1)
   }
 
-  function recordExercise(exercise: ExerciseMetadata<AdvancedCategory>, correct: number, attempts: number) {
-    add(exercise.categoryId, correct, attempts, exercise)
+  function recordExercise(exercise: ExerciseMetadata<AdvancedCategory>, correct: number, attempts: number, practiced = true) {
+    add(exercise.categoryId, correct, attempts, exercise, practiced)
   }
 
   return { ...summary, record, recordExercise, storageError }

@@ -20,6 +20,7 @@ export interface StaffNote {
   accidental: Accidental
   midi: number
   octave: number
+  value?: 'quarter' | 'eighth' | 'dotted-quarter'
 }
 
 export const readingLevels = {

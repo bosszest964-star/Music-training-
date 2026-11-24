@@ -1,4 +1,5 @@
 import { playMetronomeClick } from '../../audio/metronomeClick'
+import { barPulses } from './rhythmPatterns'
 import type { RhythmPattern } from './rhythmPatterns'
 import { audibleTime, eventTime } from './rhythmScore'
 
@@ -30,19 +31,20 @@ export function createRhythmAudio() {
     if (id !== token) return
     const beat = 60 / pattern.bpm
     const count = audio.currentTime + 0.075
-    const start = count + beat * 4
+    const pulses = barPulses(pattern)
+    const start = count + beat * pulses
     const end = start + beat * pattern.beats
     const bus = audio.createGain()
     bus.gain.value = 0.52
     bus.connect(audio.destination)
-    for (let index = 0; index < 4; index += 1) {
+    for (let index = 0; index < pulses; index += 1) {
       playMetronomeClick(audio, bus, count + index * beat, index === 0 ? 'downbeat' : 'regular')
     }
     if (demo) {
       for (const tap of pattern.taps) playMetronomeClick(audio, bus, start + tap * beat, 'secondary')
     } else {
       for (let index = 0; index < pattern.beats; index += 1) {
-        playMetronomeClick(audio, bus, start + index * beat, index % 4 === 0 ? 'downbeat' : 'regular')
+        playMetronomeClick(audio, bus, start + index * beat, index % pulses === 0 ? 'downbeat' : 'regular')
       }
     }
     const marker = audio.createConstantSource()

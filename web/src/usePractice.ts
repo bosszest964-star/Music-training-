@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-const storageKey = 'music-training.practice.v1'
+export const practiceStorageKey = 'music-training.practice.v1'
 type DailyTotals = Record<string, number>
 
 export function dayKey(date: Date) {
@@ -21,15 +21,19 @@ export function addPracticeTime(totals: DailyTotals, start: number, end: number)
   return next
 }
 
-function readTotals(): DailyTotals | null {
+export function parsePracticeTotals(raw: string | null): DailyTotals | null {
   try {
-    const stored: unknown = JSON.parse(localStorage.getItem(storageKey) ?? '{}')
-    if (!stored || typeof stored !== 'object') return {}
+    const stored: unknown = JSON.parse(raw ?? '{}')
+    if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return null
     return Object.fromEntries(Object.entries(stored).filter(([day, value]) =>
       /^\d{4}-\d{2}-\d{2}$/.test(day) && typeof value === 'number' && Number.isFinite(value) && value >= 0))
   } catch {
     return null
   }
+}
+
+function readTotals() {
+  try { return parsePracticeTotals(localStorage.getItem(practiceStorageKey)) } catch { return null }
 }
 
 function readClock() {
@@ -52,7 +56,7 @@ export function usePractice(toolActive: boolean) {
 
   useEffect(() => {
     function sync(event: StorageEvent) {
-      if (event.key !== storageKey && event.key !== null) return
+      if (event.key !== practiceStorageKey && event.key !== null) return
       const latest = readTotals()
       if (!latest) return
       totalsRef.current = latest
@@ -75,7 +79,7 @@ export function usePractice(toolActive: boolean) {
       setTotals(next)
       setElapsed(value => value + delta)
       try {
-        localStorage.setItem(storageKey, JSON.stringify(next))
+        localStorage.setItem(practiceStorageKey, JSON.stringify(next))
         setStorageError(false)
       } catch {
         setStorageError(true)
