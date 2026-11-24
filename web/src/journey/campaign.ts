@@ -1,74 +1,91 @@
-import { exerciseById } from '../ear/advanced/catalog'
+import { intonationStages } from '../ear/advanced/intonation'
+import { melodies } from '../ear/advanced/melodies'
+import { progressions } from '../ear/advanced/progressions'
+import { rhythmPatterns } from '../ear/advanced/rhythmPatterns'
 import { exerciseMetadata, gradeStars } from '../exerciseMetadata'
 import type { ExerciseDifficulty } from '../exerciseMetadata'
-import { pianoById } from '../instrument/mastery/curriculum'
-import { vocalExerciseById } from '../vocal/catalog'
-import { clefs, readingLevels } from '../instrument/mastery/sightReading'
-import type { Clef } from '../instrument/mastery/sightReading'
+import { pianoCurriculum } from '../instrument/mastery/curriculum'
 import { fretInstruments } from '../instrument/mastery/fretboard'
 import type { FretChallenge, FretInstrument, fretRegions } from '../instrument/mastery/fretboard'
+import { clefs, readingLevels } from '../instrument/mastery/sightReading'
+import type { Clef } from '../instrument/mastery/sightReading'
 import type { PianoHand } from '../instrument/songs'
+import { etudes } from '../vocal/etudes'
+import { warmups } from '../vocal/warmups'
 
-type LibraryKind = 'echo' | 'progression' | 'rhythm' | 'intonation' | 'warmup' | 'etude' | 'piano'
-export type Mission =
-  | { kind: LibraryKind; id: string; hand?: PianoHand | 'both' }
-  | { kind: 'guitar'; instrument: FretInstrument; mode: FretChallenge; region: keyof typeof fretRegions }
-  | { kind: 'reading'; clef: Clef; difficulty: ExerciseDifficulty }
-
-function ear(kind: 'echo' | 'progression' | 'rhythm' | 'intonation', id: string): Mission {
-  return { kind, id: `${kind}-${id}` }
+function libraryMission<Kind extends string, Exercise extends { id: string }>(
+  kind: Kind, catalog: readonly Exercise[], id: string,
+) {
+  const exercise = catalog.find(item => item.id === id)
+  if (!exercise) throw new Error(`Missing campaign exercise: ${kind} (${id})`)
+  return { kind, id, exercise }
 }
-const sing = (id: string): Mission => ({ kind: 'warmup', id: `vocal-warmup-${id}` })
-const etude = (id: string): Mission => ({ kind: 'etude', id: `vocal-etude-${id}` })
-const piano = (id: string, hand?: PianoHand | 'both'): Mission => ({ kind: 'piano', id: `instrument-piano-${id}`, hand })
-const reading = (clef: Clef, difficulty: ExerciseDifficulty): Mission => ({ kind: 'reading', clef, difficulty })
-const guitar = (mode: FretChallenge, region: keyof typeof fretRegions, instrument: FretInstrument = 'guitar'): Mission =>
-  ({ kind: 'guitar', instrument, mode, region })
+
+const ear = {
+  echo: (id: string) => libraryMission('echo', melodies, 'echo-' + id),
+  progression: (id: string) => libraryMission('progression', progressions, 'progression-' + id),
+  rhythm: (id: string) => libraryMission('rhythm', rhythmPatterns, 'rhythm-' + id),
+  intonation: (id: string) => libraryMission('intonation', intonationStages, 'intonation-' + id),
+}
+const sing = (id: string) => libraryMission('warmup', warmups, 'vocal-warmup-' + id)
+const etude = (id: string) => libraryMission('etude', etudes, 'vocal-etude-' + id)
+function piano(id: string, hand?: PianoHand | 'both') {
+  const mission = libraryMission('piano', pianoCurriculum, 'instrument-piano-' + id)
+  if (hand && !mission.exercise.hands) throw new Error(`Missing hand track for ${mission.id}`)
+  return { ...mission, hand }
+}
+const reading = (clef: Clef, difficulty: ExerciseDifficulty) => ({ kind: 'reading' as const, clef, difficulty })
+const guitar = (mode: FretChallenge, region: keyof typeof fretRegions, instrument: FretInstrument = 'guitar') =>
+  ({ kind: 'guitar' as const, instrument, mode, region })
+
+export type Mission = ReturnType<(typeof ear)[keyof typeof ear] | typeof sing | typeof etude | typeof piano | typeof reading | typeof guitar>
 
 const worldPlans: readonly { name: string; goal: string; missions: readonly Mission[] }[] = [
   { name: 'ก้าวแรก', goal: 'จับชีพจรเพลงและจดจำโน้ตใกล้มือ', missions: [
-    ear('rhythm', 'four-quarters'), ear('echo', 'rise-step'), piano('five-fingers'), sing('scale'),
-    reading('treble', 'beginner'), guitar('find', 'first'), ear('rhythm', 'alternating-rest'),
-    ear('intonation', '50'), piano('left-fingers'), ear('progression', 'cadence'),
+    ear.rhythm('four-quarters'), ear.echo('rise-step'), piano('five-fingers'), sing('scale'),
+    reading('treble', 'beginner'), guitar('find', 'first'), ear.rhythm('alternating-rest'),
+    ear.intonation('50'), piano('left-fingers'), ear.progression('cadence'),
   ] },
   { name: 'ต่อวลี', goal: 'ฟังทางคอร์ด ฝึกพัก และวางจังหวะให้มั่นคง', missions: [
-    ear('rhythm', 'pair-eighths'), ear('echo', 'third-home'), sing('lip-trill'), piano('twinkle'),
+    ear.rhythm('pair-eighths'), ear.echo('third-home'), sing('lip-trill'), piano('twinkle'),
     reading('bass', 'beginner'), guitar('name', 'first', 'ukulele'), etude('amazing-grace'),
-    ear('progression', 'doo-wop'), piano('c-major'), etude('after-the-rain'),
+    ear.progression('doo-wop'), piano('c-major'), etude('after-the-rain'),
   ] },
   { name: 'ข้ามช่วงเสียง', goal: 'ประสานมือและฟังระยะเสียงจากวลียาวขึ้น', missions: [
-    ear('echo', 'step-arch'), ear('rhythm', 'dotted-quarter'), sing('fifth-leap'), piano('pop-chords', 'left'),
-    guitar('find', 'upper', 'bass'), reading('grand', 'intermediate'), ear('progression', 'two-five-one'),
-    ear('intonation', '25'), etude('river-path'), piano('waltz', 'both'),
+    ear.echo('step-arch'), ear.rhythm('dotted-quarter'), sing('fifth-leap'), piano('pop-chords', 'left'),
+    guitar('find', 'upper', 'bass'), reading('grand', 'intermediate'), ear.progression('two-five-one'),
+    ear.intonation('25'), etude('river-path'), piano('waltz', 'both'),
   ] },
   { name: 'ขัดจังหวะ', goal: 'อ่านเส้นน้อยและเล่นตามเสียงที่เปลี่ยนทิศ', missions: [
-    ear('rhythm', 'offbeat-eighths'), ear('echo', 'octave-preview'), sing('arpeggio'), piano('offbeat-melody', 'right'),
-    guitar('name', 'upper'), reading('treble', 'advanced'), ear('progression', 'royal-road'),
-    ear('intonation', '18'), piano('fur-elise'), ear('rhythm', 'triplet-intro'),
+    ear.rhythm('offbeat-eighths'), ear.echo('octave-preview'), sing('arpeggio'), piano('offbeat-melody', 'right'),
+    guitar('name', 'upper'), reading('treble', 'advanced'), ear.progression('royal-road'),
+    ear.intonation('18'), piano('fur-elise'), ear.rhythm('triplet-intro'),
   ] },
   { name: 'ขึ้นเวที', goal: 'ฟังรายละเอียดและเล่นวลีซับซ้อนอย่างมั่นใจ', missions: [
-    sing('melisma'), ear('echo', 'chromatic-turn'), guitar('find', 'all'), reading('grand', 'advanced'),
-    ear('progression', 'secondary-dominant'), ear('intonation', '8'), etude('velvet-pocket'),
-    ear('rhythm', 'mixed-finale'), piano('countermotion', 'both'), piano('jazz-boogie', 'both'),
+    sing('melisma'), ear.echo('chromatic-turn'), guitar('find', 'all'), reading('grand', 'advanced'),
+    ear.progression('secondary-dominant'), ear.intonation('8'), etude('velvet-pocket'),
+    ear.rhythm('mixed-finale'), piano('countermotion', 'both'), piano('jazz-boogie', 'both'),
   ] },
 ]
 
 const descriptors = { echo: 'ฝึกหู', progression: 'ทางคอร์ด', rhythm: 'จังหวะ', intonation: 'เสียงเพี้ยน',
   warmup: 'วอร์มเสียง', etude: 'ร้องทำนอง', piano: 'เปียโน', guitar: 'คอเครื่องสาย', reading: 'อ่านโน้ต' }
 
-export function missionLabel(mission: Mission) {
-  const category = descriptors[mission.kind]
-  if (mission.kind === 'guitar') return `${category} · ${fretInstruments[mission.instrument].label}`
-  if (mission.kind === 'reading') return `${clefs[mission.clef]} · ${readingLevels[mission.difficulty].label}`
-  if (mission.kind === 'piano') {
-    const title = pianoById.get(mission.id)?.title
-    const hands = mission.hand === 'left' ? ' · มือซ้าย' : mission.hand === 'right' ? ' · มือขวา' : ''
-    return `${title ?? category}${hands}`
+export function missionLabel(mission: Mission): string {
+  switch (mission.kind) {
+    case 'guitar': return `${descriptors.guitar} · ${fretInstruments[mission.instrument].label}`
+    case 'reading': return `${clefs[mission.clef]} · ${readingLevels[mission.difficulty].label}`
+    case 'piano': {
+      const hands = mission.hand === 'left' ? ' · มือซ้าย' : mission.hand === 'right' ? ' · มือขวา' : ''
+      return mission.exercise.title + hands
+    }
+    case 'echo': return 'ฟังทำนองแล้วเล่นตาม'
+    case 'progression': return 'ฟังและแยกทางเดินคอร์ด'
+    case 'intonation': return `จับเสียงเพี้ยน ${mission.exercise.cents} cents`
+    case 'rhythm':
+    case 'warmup':
+    case 'etude': return mission.exercise.label
   }
-  if (mission.kind === 'progression') return 'ฟังและแยกทางเดินคอร์ด'
-  const exercise = exerciseById.get(mission.id) ?? vocalExerciseById.get(mission.id)
-  if (exercise && 'cents' in exercise) return `จับเสียงเพี้ยน ${exercise.cents} cents`
-  return exercise && 'label' in exercise ? exercise.label : mission.kind === 'echo' ? 'ฟังทำนองแล้วเล่นตาม' : category
 }
 
 export const worlds = worldPlans.map(({ name, goal, missions }, worldIndex) => ({
@@ -88,6 +105,7 @@ export type Stage = typeof stages[number]
 export type StageStars = Record<string, number>
 
 export function isUnlocked(stage: Stage, stars: StageStars, unlockAll: boolean) {
+  // accessTier is catalog metadata. All campaign stages are free to play.
   return unlockAll || stage.number === 1 || (stars[stages[stage.number - 2].id] ?? 0) > 0
 }
 

@@ -19,7 +19,6 @@ function CampaignStage({ stage, best, onAward, back, next, sources, onActiveChan
   useForegroundPractice(earStage, onActiveChange)
 
   function score(result: MissionResult) {
-    if (!result.practiced) return
     batch.current.push(result.accuracy)
     setCount(batch.current.length)
     if (batch.current.length < batchSize) return
@@ -71,6 +70,7 @@ export default function CampaignPage({ progress, sources, onActiveChange }: Runn
   const chapter = worlds[world - 1]
 
   function open(stage: Stage) {
+    if (!unlocked(stage)) return
     select(stage)
     setWorld(stage.world)
     window.scrollTo(0, 0)
@@ -113,17 +113,30 @@ export default function CampaignPage({ progress, sources, onActiveChange }: Runn
           {chapter.stages.map(stage => {
             const canPlay = unlocked(stage)
             const stars = progress.stars[stage.id] ?? 0
+            const titleId = stage.id + '-title'
+            const requirementId = stage.id + '-requirement'
             return <li key={stage.id} data-boss={stage.boss || undefined}>
-              <button className="journey-node" disabled={!canPlay} data-cleared={stars > 0 || undefined}
-                onClick={() => open(stage)}>
-                <span className="journey-node-number">
-                  {canPlay ? stage.boss ? <Trophy size={20} aria-hidden="true" /> : stage.number : <LockKeyhole size={17} aria-hidden="true" />}
-                </span>
-                <span className="journey-node-title">
-                  <small>{stage.boss ? 'บอส' : 'ด่าน'} {stage.number} · {stage.skill}</small><strong>{stage.label}</strong>
-                </span>
-                {canPlay ? <MasteryStars stars={stars} max={stage.maxStars} /> : <span className="journey-muted">ยังล็อก</span>}
-              </button>
+              <article className="journey-node" aria-labelledby={titleId}
+                data-cleared={stars > 0 || undefined} data-locked={!canPlay || undefined}>
+                <header className="journey-node-header">
+                  <span className="journey-node-number" aria-hidden="true">
+                    {stage.boss ? <Trophy size={20} /> : stage.number}
+                  </span>
+                  <div className="journey-node-title">
+                    <small>{stage.boss ? 'บอส' : 'ด่าน'} {stage.number} · {stage.skill}</small>
+                    <strong id={titleId}>{stage.label}</strong>
+                  </div>
+                  <MasteryStars stars={stars} max={stage.maxStars} />
+                </header>
+                <footer className="journey-node-footer">
+                  {!canPlay && <p className="journey-muted" id={requirementId}>ต้องผ่านด่าน {stage.number - 1} ก่อน</p>}
+                  <button type="button" className={canPlay ? 'primary-button journey-node-action' : 'subtle-button journey-node-action'}
+                    disabled={!canPlay} aria-describedby={canPlay ? titleId : titleId + ' ' + requirementId}
+                    onClick={() => open(stage)}>
+                    {canPlay ? <Play size={17} /> : <LockKeyhole size={17} />}{canPlay ? 'เริ่มเล่น' : 'ยังล็อก'}
+                  </button>
+                </footer>
+              </article>
             </li>
           })}
         </ol>

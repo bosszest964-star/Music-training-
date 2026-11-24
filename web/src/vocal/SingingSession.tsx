@@ -6,7 +6,9 @@ import { gradeStars } from '../exerciseMetadata'
 import { bpmLimits, fittedRoot, limitRoot, scoreRound, targetAt, tolerance } from './music'
 import type { VocalRange, VocalPlan } from './music'
 import { warmups, warmupGroups, buildWarmup } from './warmups'
+import type { Warmup } from './warmups'
 import { etudes, etudeGroups, buildEtude } from './etudes'
+import type { Etude } from './etudes'
 import { scheduleSinging, singingPianoNotes } from './singingAudio'
 import { KeyControls } from './KeyControls'
 import { ExercisePicker, VocalStars } from './VocalControls'
@@ -21,16 +23,16 @@ const phaseLabel: Record<Phase, string> = {
 }
 const initialFeedback = { target: null as number | null, input: null as number | null, cents: null as number | null }
 
-export default function SingingSession({ mode, range, save, onActiveChange, presetId }: {
+export default function SingingSession({ mode, range, save, onActiveChange, preset }: {
   mode: 'warmup' | 'etude'
-  presetId?: string
+  preset?: Warmup | Etude
   range: VocalRange | null
   save: VocalStats['saveRound']
   onActiveChange: (active: boolean) => void
 }) {
   const isEtude = mode === 'etude'
   const exercises = isEtude ? etudes : warmups
-  const [exerciseId, setExerciseId] = useState(presetId ?? exercises[0].id)
+  const [exerciseId, setExerciseId] = useState(exercises[0].id)
   const [customBpm, setBpm] = useState<number | null>(null)
   const [transpose, setTranspose] = useState(0)
   const [guide, setGuide] = useState(true)
@@ -41,7 +43,7 @@ export default function SingingSession({ mode, range, save, onActiveChange, pres
   const mic = useMicrophonePitch()
   const trace = useRef<PitchTrace | null>(null)
   const [sessionPlan, setSessionPlan] = useState<VocalPlan | null>(null)
-  const exercise = exercises.find(item => item.id === exerciseId) ?? exercises[0]
+  const exercise = preset ?? exercises.find(item => item.id === exerciseId) ?? exercises[0]
   const bpm = customBpm ?? exercise.bpm
   const span = exercise.span
   const base = fittedRoot(range, span)
@@ -157,14 +159,14 @@ export default function SingingSession({ mode, range, save, onActiveChange, pres
         </div>
         <span className={`status vocal-phase ${phase === 'singing' ? 'status-live' : ''}`} role="status">{prompt}</span>
       </header>
-      {!presetId && <ExercisePicker exercises={exercises} groups={isEtude ? etudeGroups : warmupGroups} selected={exercise.id}
+      {!preset && <ExercisePicker exercises={exercises} groups={isEtude ? etudeGroups : warmupGroups} selected={exercise.id}
         disabled={busy} onSelect={id => {
           clearRound()
           setExerciseId(id)
           setTranspose(0)
           setBpm(null)
         }} />}
-      <p className="vocal-coach"><strong>{presetId ? exercise.label : 'วิธีร้อง'}</strong> {exercise.coach}</p>
+      <p className="vocal-coach"><strong>{preset ? exercise.label : 'วิธีร้อง'}</strong> {exercise.coach}</p>
       <div className="vocal-settings">
         <div className="vocal-bpm">
           <label htmlFor="vocal-bpm">ความเร็ว <strong>{bpm} BPM</strong></label>
