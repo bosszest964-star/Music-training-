@@ -3,10 +3,8 @@ import MelodicEcho from '../ear/advanced/MelodicEcho'
 import ProgressionTrainer from '../ear/advanced/ProgressionTrainer'
 import RhythmTapTrainer from '../ear/advanced/RhythmTapTrainer'
 import IntonationTrainer from '../ear/advanced/IntonationTrainer'
-import { melodies, melodyForExercise } from '../ear/advanced/melodies'
-import { progressions, progressionForExercise, progressionQuestion } from '../ear/advanced/progressions'
-import { rhythmPatterns } from '../ear/advanced/rhythmPatterns'
-import { intonationStages } from '../ear/advanced/intonation'
+import { melodyForExercise } from '../ear/advanced/melodies'
+import { progressionForExercise, progressionQuestion } from '../ear/advanced/progressions'
 import type { EarStatsData } from '../ear/stats'
 import PianoLoadStatus from '../audio/PianoLoadStatus'
 import { ListenButton } from '../ear/advanced/TrainingControls'
@@ -59,24 +57,27 @@ function useScores(sources: ExerciseSources, onResult?: RunnerProps['onResult'])
 }
 
 export function MissionRunner({ mission, sources, onResult, onActiveChange }: RunnerProps & { mission: Mission }) {
-  const echo = useMemo(() => mission.kind === 'echo' ? melodies.find(item => item.id === mission.id) : null, [mission])
-  const progression = useMemo(() => mission.kind === 'progression' ? progressions.find(item => item.id === mission.id) : null, [mission])
-  const melody = useMemo(() => echo ? melodyForExercise(echo) : null, [echo])
-  const chords = useMemo(() => progression ? progressionForExercise(progression) : null, [progression])
+  const prepared = useMemo(() => {
+    switch (mission.kind) {
+      case 'echo': return { kind: mission.kind, question: melodyForExercise(mission.exercise) }
+      case 'progression': return { kind: mission.kind, question: progressionForExercise(mission.exercise) }
+      default: return mission
+    }
+  }, [mission])
   const { ear, save, saveVocal } = useScores(sources, onResult)
   const instrument = { save, onActiveChange }
-  switch (mission.kind) {
-    case 'echo': return melody && <MelodicEcho stats={ear} preset={melody} />
-    case 'progression': return chords && <ProgressionTrainer stats={ear} preset={chords}
+  switch (prepared.kind) {
+    case 'echo': return <MelodicEcho stats={ear} preset={prepared.question} />
+    case 'progression': return <ProgressionTrainer stats={ear} preset={prepared.question}
       nextPreset={previous => progressionQuestion(previous.correct.difficulty, previous.correct, previous.tonic)} />
-    case 'rhythm': return <RhythmTapTrainer stats={ear} preset={rhythmPatterns.find(item => item.id === mission.id)} />
-    case 'intonation': return <IntonationTrainer stats={ear} preset={intonationStages.find(item => item.id === mission.id)} />
+    case 'rhythm': return <RhythmTapTrainer stats={ear} preset={prepared.exercise} />
+    case 'intonation': return <IntonationTrainer stats={ear} preset={prepared.exercise} />
     case 'warmup':
-    case 'etude': return <SingingSession mode={mission.kind} presetId={mission.id}
+    case 'etude': return <SingingSession mode={prepared.kind} preset={prepared.exercise}
       range={sources.vocal.range} save={saveVocal} onActiveChange={onActiveChange} />
-    case 'piano': return <PianoTrainer {...instrument} preset={mission} />
-    case 'guitar': return <FretboardTrainer {...instrument} preset={mission} />
-    case 'reading': return <SightReadingTrainer {...instrument} preset={mission} />
+    case 'piano': return <PianoTrainer {...instrument} preset={{ lesson: prepared.exercise, hand: prepared.hand }} />
+    case 'guitar': return <FretboardTrainer {...instrument} preset={prepared} />
+    case 'reading': return <SightReadingTrainer {...instrument} preset={prepared} />
   }
 }
 

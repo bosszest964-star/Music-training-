@@ -23,9 +23,9 @@ const clock = () => performance.now() / 1000
 
 export default function PianoTrainer({ save, onActiveChange, preset }: {
   save: SaveRound; onActiveChange: (active: boolean) => void
-  preset?: { id?: string; song?: PianoSong; hand?: PianoHand | 'both'; timed?: boolean }
+  preset?: { lesson?: typeof pianoCurriculum[number]; song?: PianoSong; hand?: PianoHand | 'both'; timed?: boolean }
 }) {
-  const [selection, setSelection] = useState(preset?.id ?? pianoCurriculum[0].id)
+  const [selection, setSelection] = useState(pianoCurriculum[0].id)
   const [group, setGroup] = useState<keyof typeof pianoGroups>(pianoCurriculum[0].group)
   const [hand, setHand] = useState<PianoHand | 'both'>(preset?.hand ?? 'both')
   const [imported, setImported] = useState<PianoSong | null>(null)
@@ -45,7 +45,7 @@ export default function PianoTrainer({ save, onActiveChange, preset }: {
   const importId = useRef(0)
   const micSilentUntil = useRef(0)
   const scroller = useRef<HTMLDivElement>(null)
-  const lesson = preset?.song ? undefined : pianoById.get(selection)
+  const lesson = preset?.lesson ?? (preset?.song ? undefined : pianoById.get(selection))
   const fullSong = preset?.song ?? lesson ?? imported ?? pianoCurriculum[0]
   const song = useMemo(() => songForHand(fullSong, hand), [fullSong, hand])
   const layout = useMemo(() => pianoKeys(song.low, song.high), [song])
