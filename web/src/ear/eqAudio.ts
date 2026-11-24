@@ -1,3 +1,4 @@
+import { resumeAudio } from '../audio/resumeAudio'
 import { pianoReady } from '../audio/pianoEngine'
 import { loopPianoNotes, pinkLoop, renderMusicalLoop } from './eqLoops'
 import type { EqSource } from './eqLoops'
@@ -80,7 +81,7 @@ export function createEqAudio() {
     const ticket = generation
     const audio = context ??= new AudioContext({ latencyHint: 'playback' })
     // This starts from the original button gesture, before any file decoding.
-    await audio.resume()
+    await resumeAudio(audio)
     if (ticket !== generation) return null
     const sampled = type === 'piano' && pianoReady(loopPianoNotes)
     const buffer = await getLoop(audio, type, sampled, file)

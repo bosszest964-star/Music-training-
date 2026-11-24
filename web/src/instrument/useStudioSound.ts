@@ -1,3 +1,4 @@
+import { resumeAudio } from '../audio/resumeAudio'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { playNote } from '../audio/noteSynth'
 import type { SynthVoice } from '../audio/noteSynth'
@@ -28,9 +29,8 @@ export function useStudioSound() {
         session.current = { context, output }
       }
       active = session.current
-      if (active.context.state !== 'running') await active.context.resume()
+      await resumeAudio(active.context)
       if (session.current !== active) return null
-      if (active.context.state !== 'running') throw new Error('Audio context is not running')
       setError('')
       return active
     } catch {

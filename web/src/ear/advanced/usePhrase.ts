@@ -30,7 +30,7 @@ export function usePhrase() {
       onEnd?.()
     }, kind === 'note' ? 0.018 : 0.055).catch(() => {
       if (token !== generation.current) return
-      player.stop()
+      player.dispose()
       setPlaying(null)
       setError('เล่นเสียงไม่ได้ ลองแตะปุ่มฟังอีกครั้ง')
     })

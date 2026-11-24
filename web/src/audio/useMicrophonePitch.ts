@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { connectPitchReader, microphoneOptions, pitchSampleInterval } from './microphonePitch'
+import { resumeAudio } from './resumeAudio'
 import { hzToMidi } from './pitch'
 
 interface Input {
@@ -136,10 +137,7 @@ export function useMicrophonePitch() {
       } else {
         const activationError = 'เริ่มระบบเสียงไม่ได้ ตรวจสอบอุปกรณ์เสียงแล้วลองอีกครั้ง'
         session.activate = () => {
-          void context.resume().then(() => {
-            if (context.state === 'running') begin()
-            else fail(activationError)
-          }, () => fail(activationError))
+          void resumeAudio(context).then(begin, () => fail(activationError))
         }
         setState('activation')
         void activation.then(begin)

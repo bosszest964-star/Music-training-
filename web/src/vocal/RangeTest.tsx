@@ -81,7 +81,7 @@ export default function RangeTest({ range, save }: { range: VocalRange | null; s
         <>
           <RangeResult range={range} />
           <p className="vocal-help">วอร์มเสียง ร้องทำนอง และเกมร้องเก็บดาวจะใช้ช่วงนี้ช่วยเลือกคีย์เริ่มต้น กลุ่มเสียงเป็นเพียงการเทียบช่วงโน้ต</p>
-          <button className="subtle-button" onClick={() => setTesting(true)}><RotateCcw size={17} />ทดสอบใหม่</button>
+          <button className="primary-button" onClick={() => setTesting(true)}><RotateCcw size={17} />ทดสอบใหม่</button>
         </>
       ) : (
         <>
@@ -99,7 +99,8 @@ export default function RangeTest({ range, save }: { range: VocalRange | null; s
             <div><span>โน้ต{boundary}ที่วัดได้</span><strong>{reading.best === null ? '—' : noteLabel(reading.best)}</strong></div>
           </div>
           <div className="vocal-actions">
-            <button className="subtle-button" onClick={mic.state === 'activation' ? mic.activate : busy ? stop : start}>
+            <button className={!busy || mic.state === 'activation' ? 'primary-button' : 'subtle-button'}
+              onClick={mic.state === 'activation' ? mic.activate : busy ? stop : start}>
               {!busy || mic.state === 'activation' ? <Mic size={17} /> : <Square size={17} />}
               {mic.state === 'activation' ? 'เริ่มฟังเสียง' : mic.state === 'requesting' ? 'ยกเลิกขอใช้ไมโครโฟน' : busy ? 'หยุดฟัง' : 'เปิดไมโครโฟน'}
             </button>

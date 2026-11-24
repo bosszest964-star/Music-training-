@@ -36,7 +36,6 @@
 .stem-file { position: relative; margin-top: 6px; overflow: hidden; cursor: pointer; }
 .stem-file input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
 .stem-file:focus-within { outline: 2px solid #c2a4ff; outline-offset: 2px; }
-.stem-file:has(input:disabled) { opacity: .55; cursor: default; }
 .stem-hint { color: var(--muted); font-size: .92rem; margin-block: 5px; }
 .stem-import, .stem-engine-fields { display: grid; gap: 8px; }
 .stem-import { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 8px 0 12px; }

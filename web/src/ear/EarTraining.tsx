@@ -85,7 +85,7 @@ function Exercise({ game, voice, difficulty, mode, record }: {
       })
     } catch {
       if (token !== run.current) return
-      audio.stop()
+      audio.dispose()
       setPlaying(false)
       setError('เล่นเสียงไม่ได้ ตรวจสอบเสียงของอุปกรณ์แล้วลองอีกครั้ง')
     }

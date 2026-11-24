@@ -1,3 +1,4 @@
+import { resumeAudio } from '../audio/resumeAudio'
 import { waveformPeaks } from '../instrument/audioDeck'
 
 export const stems = ['vocals', 'drums', 'bass', 'other'] as const
@@ -250,7 +251,7 @@ export function createStemMixer() {
 
   async function activate() {
     const active = ready()
-    if (active.context.state !== 'running') await active.context.resume()
+    await resumeAudio(active.context)
     if (session !== active || active.context.state !== 'running') throw new Error('เปิดระบบเสียงไม่ได้ ลองแตะเล่นอีกครั้ง')
   }
 
